@@ -1,0 +1,559 @@
+@font-face {
+    font-family: "Bellota-Regular";
+    src: url(../fonts/Bellota_Text/BellotaText-Regular.ttf) format("truetype");
+    font-weight: 400;
+}
+
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /*Hilfe für Container*/
+     /* background-color: hsla(0, 100%, 50%, 0.1); */
+}
+
+body {
+    color: white;
+    background-color: var(--background);
+    display: grid;
+    grid-template-columns: max(280px) 1fr;   
+    grid-template-rows:  max(50px) 1fr; 
+    grid-template-areas:
+    "top top"
+    "side main";
+    height: 100vh;
+}
+
+:root {
+    --background: #14181d;
+    --elements: #21222d;
+    --highlights: rgb(251, 109, 7);
+}
+
+/* == Buttons
+=================================== */
+
+.container-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+button {
+    width: auto;
+    height: 45px;
+    background: var(--elements);
+    color: white;
+    border: none;
+    margin: 20px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.container-button :last-child{
+    border: 1px solid var(--highlights);
+}
+
+.container-button :last-child:hover{
+    background-color: var(--highlights);
+}
+
+.openOverlayBtn {
+    height: auto;
+    padding: 10px;
+    margin: auto;
+}
+
+/* == Grid System  Dashboard
+=================================== */
+
+.dashboardGrid {
+    grid-area: main;
+    margin: 30px;
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr 1fr;    
+    grid-template-rows:  1fr 1fr 1fr;
+    grid-template-areas:
+    "main main side"
+    "main main side"
+    "bottom bottom bottom";
+}
+
+/* == Navigationsleiste 
+=================================== */
+
+.top {
+    grid-area: top;
+    background: var(--elements);
+    display: flex;
+    align-items: center;     /* vertikal  */
+    padding-left: 40px;
+    padding-right: 40px;
+    font-family: Bellota-Regular;
+    font-size: 18px;
+}
+
+.top div {
+    display: flex;
+    margin-left: auto;
+}
+
+.top div box-icon {
+    width: 18px;
+}
+
+
+/* == Navigationsleiste 
+=================================== */
+
+.hero {
+    grid-area: side;
+    height: 100%;
+    background: var(--elements);
+    margin-top: 10px;
+}
+
+#logo {
+    width: 30px;
+    height: 30px;
+}
+
+#FC {
+    text-transform: uppercase;
+    font-weight: 800;
+    font-size: 18px;
+    color: orange;
+    margin-left: 10px;
+    background: linear-gradient(to right, #ff6a00, #ee0979);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.top div > * {
+    margin-left: 20px;
+}
+
+.top div img {
+    width: 20px;
+    border-radius: 50%;
+}
+
+.links {
+    margin: 40px 0 0 40px;
+}
+.links li a {
+    font-family: Bellota-Regular;
+    display: inline-flex;
+    text-decoration: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+li box-icon {
+    margin: 0 10px 0 0;
+    width: 18px;
+}
+
+ul > li {
+    list-style: none;
+    padding: 10px 0;
+    color: white;
+    position: relative;
+}
+
+.links li::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    height: 2px;
+    background-color: #ff6a00;
+    transition: width 0.3s ease;
+  }
+  
+ul li:hover::after {
+    width: 100%;
+}
+
+.links :nth-child(6) {
+    margin-top: 100px;
+}
+
+/* == Neue Teamliste in Gruppen
+=================================== */
+
+.list {
+    list-style: none;
+    padding: 20px 0;
+}
+
+.list li {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+}
+
+.list p {
+    width: 200px;
+}
+
+/* == Seite Spielplan 
+=================================== */
+
+.dash {
+    margin: 30px;
+    font-family: Bellota-Regular;
+
+}
+
+.tableFull {
+    border-collapse: collapse;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    background-color: var(--elements);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+caption {
+    text-align: left;
+}
+
+.rowsFull, .form-curve {
+    height: 70px;
+}
+
+@media (max-width: 920px) {
+
+    th {
+        display: none;
+    }
+
+    td {
+        display: grid;
+        grid-template-columns: 10ch auto;
+        padding: 0.5rem 1rem;
+    }
+
+    td:first-child {
+        padding-top: 4rem;
+    }
+    
+
+    td:nth-of-type(1)::before {
+        content: "Nr ";
+    }
+    td:nth-of-type(2)::before {
+        content: "Spielfeld ";
+    }
+
+    td:nth-of-type(3)::before {
+        content: "Spielbegegnung ";
+    }
+
+    td:nth-of-type(4)::before {
+        content: "Form Guide ";
+    }
+
+    td:nth-of-type(5)::before {
+        content: "Ergebnis ";
+    }
+}
+
+/* Overlay für Ergebnisse eintragen 
+======================================================================== */
+  
+  /* Overlay */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: none; /* Start hidden */
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.overlay h2 {
+    font-size: 40px;
+    margin-bottom: 20px;
+}
+
+.vsTeam p {
+    font-size: 24px;
+    padding: 20px;
+}
+
+.vsTeam label {
+    font-size: 18px;
+    padding: 10px;
+}
+
+.vsSetup > div > span {
+    font-size: 60px;
+    font-weight: bold;
+}
+
+.vsTeam input[type="number"] {
+    width: 70px;
+    height: 100px;
+    text-align: center;
+    background-color: var(--elements);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 50px;
+    font-weight: bold;
+    color: white;
+}
+  
+.overlay-content {
+    background: var(--elements);
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.vsSetup {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+  
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* == Seite Gruppen 
+================================================================ */
+
+.containerTable {
+    display: flex;
+    padding: 30px;
+}
+
+.tableFlex {
+    border-collapse: collapse;
+    width: 70%;
+    padding: 20px;
+    background-color: var(--elements);
+    border-radius: 10px;
+    font-family: Bellota-Regular;
+}
+
+.liveTable {
+    align-self: flex-start;
+    width: 30%;
+    margin-left: 20px;
+    background-color: var(--elements);
+    border-radius: 10px;
+    border-collapse: collapse;
+    font-family: Bellota-Regular;
+}
+
+.tableFlex table {
+    border-collapse: collapse;
+}
+
+.tableFlex p {
+    font-size: 14px;
+    color: white;
+    padding-bottom: 10px;
+}
+
+.tableFlex p span {
+    font-size: 16px;
+    color: white;
+    padding-left: 10px;
+}
+
+th, td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid #414141;
+    color: white;
+}
+
+th {
+    font-size: 14px;
+    font-weight: 400;
+    color: white;
+}
+
+.tableFlex tr:last-of-type td {
+  border-bottom: none;
+}
+
+.liveTable tr:last-of-type td {
+    border-bottom: none;
+  }
+
+tbody:last-child {
+    border-bottom: none;
+}
+
+.form-curve {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+}
+
+.form-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.win {
+    background-color: #28a745; /* grün */
+}
+
+.draw {
+  background-color: #d1d1e0; /* grau-blau */
+    color: white;
+}
+
+.loss {
+  background-color: #c82333; /* rot */
+}
+
+
+
+/* == Übersicht 
+======================================================================= */
+
+.container1 {
+    grid-area: main;
+    height: 100%;
+    width: 100%;
+}
+
+.container2 {
+    grid-area: side side;
+    height: 100%;
+    width: 100%;
+}
+
+.container3 {
+    grid-area: side side;
+    height: 100%;
+    width: 100%;
+}
+
+.playoffPic {
+    grid-area: bottom;
+    height: 100%;
+    width: 100%;
+}
+
+/* Spielplan 
+======================================================================== */
+
+.containerForm {
+    height: 560px;
+    width: 600px;
+    margin: 8% auto;
+    border-radius: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.multiForm {
+    width: 600px;
+    background: var(--elements);
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    font-family: Bellota-Regular;
+    position: absolute;
+    top: 100px;
+    left:40px;
+    transition: 0.5s;
+}
+
+.multiForm div {
+    padding: 20px 0;
+}
+
+.multiForm  div label {
+    padding-right: 20px;
+}
+
+.multiForm  div input {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    background-color: var(--elements);
+    color: white;
+}
+
+#form2 {
+    left: 650px;
+}
+
+#form3 {
+    left: 650px;
+}
+
+.stepRow {
+    width: 360px;
+    height: 40px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 -1px 5px -1px #000;
+    position: relative;
+}
+
+.stepCol {
+    width: 120px;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+#progress {
+    position: absolute;
+    height: 100%;
+    width: 120%;
+    background: linear-gradient(to right, #ff6a00, #ee0979);
+    transform: 0.5s;
+}
+
+#progress::after {
+    content: "";
+    height: 0;
+    width: 0;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    position: absolute;
+    right: -20px;
+    top: 0;
+    border-left: 20px solid blue;
+}
