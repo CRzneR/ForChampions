@@ -46,6 +46,7 @@ function initializeModules() {
   initGroupsModule();
   initScheduleModule();
   initPlayoffsModule();
+  initDashboardModule();
 }
 
 function initializeTournamentData() {
@@ -68,8 +69,8 @@ function initializeTournamentData() {
       group.teams.push({
         id: `team-${i}-${j}`,
         name: `Team ${j + 1}`,
-        games: 0, // Calculated: wins + losses + draws
-        matchesPlayed: 0, // Actual played matches count
+        games: 0,
+        matchesPlayed: 0,
         wins: 0,
         losses: 0,
         draws: 0,
@@ -134,10 +135,70 @@ function updateTeamStats(
   team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
 }
 
+function removeMatchResults(groupIndex, team1Index, team2Index) {
+  const group = tournamentData.groups[groupIndex];
+  const team1 = group.teams[team1Index];
+  const team2 = group.teams[team2Index];
+
+  // Find the match in tournamentData.matches
+  const match = tournamentData.matches.find(
+    (m) =>
+      m.groupIndex === groupIndex &&
+      m.team1Index === team1Index &&
+      m.team2Index === team2Index
+  );
+
+  if (!match) return;
+
+  // Decrement match counts
+  team1.matchesPlayed--;
+  team2.matchesPlayed--;
+
+  // Remove goals
+  team1.goalsFor -= match.homeGoals;
+  team1.goalsAgainst -= match.awayGoals;
+  team2.goalsFor -= match.awayGoals;
+  team2.goalsAgainst -= match.homeGoals;
+
+  // Remove results
+  if (match.homeGoals > match.awayGoals) {
+    team1.wins--;
+    team2.losses--;
+    team1.points -= 3;
+    removeTeamForm(team1);
+    removeTeamForm(team2);
+  } else if (match.homeGoals < match.awayGoals) {
+    team1.losses--;
+    team2.wins--;
+    team2.points -= 3;
+    removeTeamForm(team1);
+    removeTeamForm(team2);
+  } else {
+    team1.draws--;
+    team2.draws--;
+    team1.points -= 1;
+    team2.points -= 1;
+    removeTeamForm(team1);
+    removeTeamForm(team2);
+  }
+
+  // Recalculate derived stats
+  team1.games = team1.wins + team1.losses + team1.draws;
+  team2.games = team2.wins + team2.losses + team2.draws;
+  team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
+  team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
+}
+
 function updateTeamForm(team, result) {
   team.form.unshift(result);
   if (team.form.length > 3) {
     team.form.pop();
+  }
+}
+
+function removeTeamForm(team) {
+  if (team.form.length > 0) {
+    team.form.shift();
   }
 }
 
@@ -158,4 +219,5 @@ function showAlert(message, type = "success") {
 window.tournamentData = tournamentData;
 window.initializeTournamentData = initializeTournamentData;
 window.updateTeamStats = updateTeamStats;
+window.removeMatchResults = removeMatchResults;
 window.showAlert = showAlert;

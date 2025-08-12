@@ -5,91 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Turnier Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <style>
-      .login-modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
-        justify-content: center;
-        align-items: center;
-      }
-      .login-content {
-        background-color: #21222d;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        width: 400px;
-        max-width: 90%;
-      }
-      .form-input {
-        background-color: #2d3748;
-        border: 1px solid #4a5568;
-        color: white;
-        padding: 0.75rem;
-        border-radius: 0.25rem;
-        width: 100%;
-        margin-bottom: 1rem;
-      }
-      .form-input:focus {
-        outline: none;
-        border-color: #ca5818;
-      }
-    </style>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
   </head>
   <body class="bg-[#14181D]">
-    <!-- Login Modal -->
-    <div id="login-modal" class="login-modal">
-      <div class="login-content">
-        <h2 class="text-2xl font-bold text-white mb-4 text-center">Login</h2>
-        <form id="login-form">
-          <div class="mb-4">
-            <label class="block text-gray-300 mb-2" for="login-username"
-              >Benutzername</label
-            >
-            <input
-              class="form-input"
-              id="login-username"
-              type="text"
-              required
-            />
-          </div>
-          <div class="mb-6">
-            <label class="block text-gray-300 mb-2" for="login-password"
-              >Passwort</label
-            >
-            <input
-              class="form-input"
-              id="login-password"
-              type="password"
-              required
-            />
-          </div>
-          <div class="flex justify-between items-center">
-            <button
-              type="button"
-              id="login-submit"
-              class="bg-[#CA5818] hover:bg-[#EF1475] text-white font-bold py-2 px-4 rounded"
-            >
-              Einloggen
-            </button>
-            <button
-              type="button"
-              id="login-close"
-              class="text-gray-400 hover:text-white"
-            >
-              Abbrechen
-            </button>
-          </div>
-          <p id="login-error" class="text-red-500 mt-3 hidden"></p>
-        </form>
-      </div>
-    </div>
-
     <!-- Hauptnavigation oben -->
     <nav class="bg-[#21222D] shadow-md">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,7 +17,7 @@
             <div class="flex-shrink-0 flex items-center">
               <img
                 class="h-8 w-auto"
-                src="https://avatar.iran.liara.run/public"
+                src="https://via.placeholder.com/150"
                 alt="Logo"
               />
               <span
@@ -113,15 +32,12 @@
             </div>
           </div>
           <div class="flex items-center">
-            <div id="user-auth" class="hidden">
-              <span id="username-display" class="text-white mr-4"></span>
-              <button id="logout-btn" class="text-gray-400 hover:text-white">
-                Abmelden
-              </button>
-            </div>
-            <div id="guest-auth">
-              <button id="login-btn" class="text-gray-400 hover:text-white">
-                Anmelden
+            <div class="ml-4 flex items-center md:ml-6">
+              <button
+                class="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none"
+              >
+                <span class="sr-only">Profil</span>
+                <i data-lucide="user" class="h-6 w-6"></i>
               </button>
             </div>
           </div>
@@ -138,42 +54,18 @@
             <li>
               <button
                 data-tab="dashboard"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
+                <i data-lucide="grid" class="w-5 h-5 mr-3"></i>
                 Dashboard
               </button>
             </li>
             <li>
               <button
                 data-tab="create"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
+                <i data-lucide="plus" class="w-5 h-5 mr-3"></i>
                 Turnier erstellen
               </button>
             </li>
@@ -181,90 +73,36 @@
               <button
                 data-tab="groups"
                 id="groups-tab"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
+                <i data-lucide="users" class="w-5 h-5 mr-3"></i>
                 Gruppen
               </button>
             </li>
             <li>
               <button
                 data-tab="schedule"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+                <i data-lucide="calendar" class="w-5 h-5 mr-3"></i>
                 Spielplan
               </button>
             </li>
             <li>
               <button
                 data-tab="playoffs"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
+                <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
                 Playoffs
               </button>
             </li>
             <li>
               <button
                 data-tab="settings"
-                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-700 flex items-center"
+                class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+                <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
                 Einstellungen
               </button>
             </li>
@@ -272,20 +110,16 @@
               <button
                 class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
               >
-                <svg
-                  class="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
+                <i data-lucide="help-circle" class="w-5 h-5 mr-3"></i>
                 Hilfe
+              </button>
+            </li>
+            <li>
+              <button
+                class="w-full text-left px-4 py-2 rounded hover:bg-red-600 hover:text-white text-gray-300 flex items-center"
+              >
+                <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                Abmelden
               </button>
             </li>
           </ul>
@@ -296,134 +130,92 @@
       <div class="flex-1 p-8">
         <!-- Dashboard Tab -->
         <div id="dashboard-content" class="tab-content hidden">
-          <!-- Wird von dashboard.js gefüllt -->
+          <div class="grid grid-cols-1 gap-6">
+            <!-- Übersichtskarten -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- Turnierinfo Karte -->
+              <div
+                class="bg-primary rounded-lg shadow-lg border border-gray-800 p-6"
+              >
+                <h3 class="text-lg font-bold text-white mb-4">Turnierinfo</h3>
+                <div id="tournament-info-content" class="text-gray-300">
+                  <!-- Wird von JavaScript gefüllt -->
+                </div>
+              </div>
+
+              <!-- Aktuelle Spiele Karte -->
+              <div
+                class="bg-primary rounded-lg shadow-lg border border-gray-800 p-6"
+              >
+                <h3 class="text-lg font-bold text-white mb-4">
+                  Nächste Spiele
+                </h3>
+                <div id="current-matches-content">
+                  <!-- Wird von JavaScript gefüllt -->
+                </div>
+              </div>
+
+              <!-- Top Teams Karte -->
+              <div
+                class="bg-primary rounded-lg shadow-lg border border-gray-800 p-6"
+              >
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-bold text-white">Top Teams</h3>
+                  <span
+                    class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded-full"
+                  >
+                    Playoff-Plätze
+                  </span>
+                </div>
+                <div id="top-teams-content">
+                  <!-- Wird von JavaScript gefüllt -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Gruppenübersicht -->
+            <div class="bg-primary rounded-lg shadow-lg border border-gray-800">
+              <div class="px-6 py-4 border-b border-gray-800">
+                <h2 class="text-xl font-bold text-white">Gruppenübersicht</h2>
+                <p
+                  id="dashboard-groups-info"
+                  class="text-sm text-gray-400 mt-1"
+                >
+                  ${tournamentData.name ? tournamentData.name + " - " : ""}
+                  Aktuelle Gruppenstände
+                </p>
+              </div>
+              <div
+                id="dashboard-groups-container"
+                class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              ></div>
+            </div>
+          </div>
         </div>
+
         <!-- Turnier erstellen Tab -->
-        <div id="create-content" class="tab-content hidden">
-          <!-- Wird von create.js gefüllt -->
-        </div>
+        <div id="create-content" class="tab-content hidden"></div>
 
         <!-- Gruppen Tab -->
-        <div id="groups-content" class="tab-content hidden">
-          <!-- Wird von groups.js gefüllt -->
-        </div>
+        <div id="groups-content" class="tab-content hidden"></div>
 
         <!-- Spielplan Tab -->
-        <div id="schedule-content" class="tab-content hidden">
-          <!-- Wird von schedule.js gefüllt -->
-        </div>
+        <div id="schedule-content" class="tab-content hidden"></div>
 
         <!-- Playoffs Tab -->
-        <div id="playoffs-content" class="tab-content hidden">
-          <!-- Wird von playoffs.js gefüllt -->
-        </div>
+        <div id="playoffs-content" class="tab-content hidden"></div>
       </div>
     </div>
 
     <!-- JavaScript Dateien -->
+    <script src="client/js/app.js"></script>
+    <script src="client/js/create.js"></script>
+    <script src="client/js/groups.js"></script>
+    <script src="client/js/schedule.js"></script>
+    <script src="client/js/playoffs.js"></script>
+    <script src="client/js/dashboard.js"></script>
     <script>
-      // Login System
-      document.addEventListener("DOMContentLoaded", function () {
-        // DOM Elements
-        const loginModal = document.getElementById("login-modal");
-        const loginBtn = document.getElementById("login-btn");
-        const logoutBtn = document.getElementById("logout-btn");
-        const loginClose = document.getElementById("login-close");
-        const loginSubmit = document.getElementById("login-submit");
-        const loginError = document.getElementById("login-error");
-        const userAuth = document.getElementById("user-auth");
-        const guestAuth = document.getElementById("guest-auth");
-        const usernameDisplay = document.getElementById("username-display");
-
-        // Check if user is logged in
-        function checkAuth() {
-          const token = localStorage.getItem("authToken");
-          const user = localStorage.getItem("user");
-
-          if (token && user) {
-            const userData = JSON.parse(user);
-            userAuth.classList.remove("hidden");
-            guestAuth.classList.add("hidden");
-            usernameDisplay.textContent = userData.username;
-          } else {
-            userAuth.classList.add("hidden");
-            guestAuth.classList.remove("hidden");
-          }
-        }
-
-        // Show login modal
-        loginBtn.addEventListener("click", () => {
-          loginModal.style.display = "flex";
-        });
-
-        // Close login modal
-        loginClose.addEventListener("click", () => {
-          loginModal.style.display = "none";
-          loginError.classList.add("hidden");
-        });
-
-        // Login submit
-        loginSubmit.addEventListener("click", async () => {
-          const username = document.getElementById("login-username").value;
-          const password = document.getElementById("login-password").value;
-
-          try {
-            // Hier würden Sie normalerweise eine API-Anfrage machen
-            // Für dieses Beispiel simulieren wir eine erfolgreiche Anmeldung
-            // Ersetzen Sie dies mit einem echten API-Aufruf:
-            // const response = await fetch('/api/auth/login', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify({ username, password })
-            // });
-            // const data = await response.json();
-
-            // Simulierte Antwort
-            const data = {
-              token: "simulated-token-" + Math.random().toString(36).substr(2),
-              userId: 1,
-              username: username,
-            };
-
-            // if (!response.ok) throw new Error(data.message || 'Login fehlgeschlagen');
-
-            // Speichern der Benutzerdaten
-            localStorage.setItem("authToken", data.token);
-            localStorage.setItem(
-              "user",
-              JSON.stringify({
-                id: data.userId,
-                username: data.username,
-              })
-            );
-
-            // UI aktualisieren
-            loginModal.style.display = "none";
-            checkAuth();
-            document.getElementById("login-username").value = "";
-            document.getElementById("login-password").value = "";
-          } catch (error) {
-            loginError.textContent = error.message || "Login fehlgeschlagen";
-            loginError.classList.remove("hidden");
-          }
-        });
-
-        // Logout
-        logoutBtn.addEventListener("click", () => {
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("user");
-          checkAuth();
-        });
-
-        // Initial check
-        checkAuth();
-      });
+      lucide.createIcons();
     </script>
-    <script src="/client/js/app.js"></script>
-    <script src="/client/js/create.js"></script>
-    <script src="/client/js/groups.js"></script>
-    <script src="/client/js/schedule.js"></script>
-    <script src="/client/js/playoffs.js"></script>
-    <script src="/client/js/dashboard.js"></script>
   </body>
 </html>

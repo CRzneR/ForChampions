@@ -2,6 +2,7 @@
   "name": "turnier-manager",
   "version": "1.0.0",
   "scripts": {
+    "devStart": "nodemon server.js",
     "build": "tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css",
     "watch": "tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css --watch"
   },
