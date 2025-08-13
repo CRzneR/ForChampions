@@ -36,7 +36,9 @@ function generateGroups() {
     // Teams sortieren nach Punkten, dann Tordifferenz
     group.teams.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
-      return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
+      const diffB = (b.goalsFor || 0) - (b.goalsAgainst || 0);
+      const diffA = (a.goalsFor || 0) - (a.goalsAgainst || 0);
+      return diffB - diffA;
     });
 
     const groupDiv = document.createElement("div");
@@ -59,33 +61,15 @@ function generateGroups() {
               <table class="min-w-full divide-y divide-gray-800">
                   <thead class="bg-primary">
                       <tr>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Spiele
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Team
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              S
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              N
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              U
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Tore
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              +/-
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Pkt.
-                          </th>
-                          <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                              Form
-                          </th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Spiele</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Team</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">S</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">N</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">U</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tore</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">+/-</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Pkt.</th>
+                          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Form</th>
                       </tr>
                   </thead>
                   <tbody class="bg-primary-light divide-y divide-gray-800">
@@ -94,70 +78,51 @@ function generateGroups() {
                           const isPlayoffSpot =
                             index < tournamentData.playoffSpots;
                           const gamesPlayed =
-                            team.wins + team.losses + team.draws;
+                            (team.wins || 0) +
+                            (team.losses || 0) +
+                            (team.draws || 0);
                           const goalDifference =
-                            team.goalsFor - team.goalsAgainst;
+                            (team.goalsFor || 0) - (team.goalsAgainst || 0);
 
                           return `
                           <tr class="${
                             isPlayoffSpot ? "bg-green-900 bg-opacity-30" : ""
                           } hover:bg-primary transition-colors">
-                              <!-- Spiele -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-medium ${
+                              <td class="px-4 py-3 text-sm text-center font-medium ${
                                 isPlayoffSpot
                                   ? "text-green-400"
                                   : "text-gray-300"
-                              }">
-                                  ${gamesPlayed}
-                              </td>
-                              
-                              <!-- Team Name -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-white">
-                                  ${team.name}
-                              </td>
-                              
-                              <!-- Siege -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-300">
-                                  ${team.wins}
-                              </td>
-                              
-                              <!-- Niederlagen -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-300">
-                                  ${team.losses}
-                              </td>
-                              
-                              <!-- Unentschieden -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-300">
-                                  ${team.draws}
-                              </td>
-                              
-                              <!-- Tore -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center text-gray-300">
-                                  ${team.goalsFor}:${team.goalsAgainst}
-                              </td>
-                              
-                              <!-- Tordifferenz -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-medium ${
+                              }">${gamesPlayed}</td>
+                              <td class="px-4 py-3 text-sm font-medium text-white">${
+                                team.name
+                              }</td>
+                              <td class="px-4 py-3 text-sm text-center text-gray-300">${
+                                team.wins || 0
+                              }</td>
+                              <td class="px-4 py-3 text-sm text-center text-gray-300">${
+                                team.losses || 0
+                              }</td>
+                              <td class="px-4 py-3 text-sm text-center text-gray-300">${
+                                team.draws || 0
+                              }</td>
+                              <td class="px-4 py-3 text-sm text-center text-gray-300">${
+                                team.goalsFor || 0
+                              }:${team.goalsAgainst || 0}</td>
+                              <td class="px-4 py-3 text-sm text-center font-medium ${
                                 goalDifference > 0
                                   ? "text-green-400"
                                   : goalDifference < 0
                                   ? "text-red-400"
                                   : "text-gray-300"
-                              }">
-                                  ${
-                                    goalDifference > 0 ? "+" : ""
-                                  }${goalDifference}
-                              </td>
-                              
-                              <!-- Punkte -->
-                              <td class="px-4 py-3 whitespace-nowrap text-sm text-center font-bold text-white">
-                                  ${team.points}
-                              </td>
-                              
-                              <!-- Form -->
-                              <td class="px-4 py-3 whitespace-nowrap">
+                              }">${
+                            goalDifference > 0 ? "+" : ""
+                          }${goalDifference}</td>
+                              <td class="px-4 py-3 text-sm text-center font-bold text-white">${
+                                team.points || 0
+                              }</td>
+                              <td class="px-4 py-3">
                                   <div class="flex justify-center space-x-1">
-                                      ${team.form
+                                      ${(team.form || [])
                                         .map((result) => {
                                           const colorClasses = {
                                             W: "bg-green-600 text-white",
@@ -171,7 +136,7 @@ function generateGroups() {
                                         })
                                         .join("")}
                                       ${
-                                        team.form.length === 0
+                                        !team.form || team.form.length === 0
                                           ? '<span class="text-gray-500 text-xs">-</span>'
                                           : ""
                                       }
