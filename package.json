@@ -2,11 +2,14 @@
   "name": "turnier-manager",
   "version": "1.0.0",
   "scripts": {
-    "devStart": "nodemon server.js",
-    "build": "tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css",
-    "watch": "tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css --watch"
+    "dev:client": "live-server client --port=3000",
+    "dev:server": "cd server && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "start": "cd server && npm start"
   },
   "dependencies": {
+    "live-server": "^1.2.2",
+    "concurrently": "^8.2.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",

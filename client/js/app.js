@@ -14,210 +14,279 @@ document.addEventListener("DOMContentLoaded", function () {
   setupTabNavigation();
   initializeModules();
   document.querySelector('[data-tab="create"]').click();
-});
 
-function setupTabNavigation() {
-  const tabs = document.querySelectorAll("[data-tab]");
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", function () {
-      // Remove active state from all tabs
-      tabs.forEach((t) =>
-        t.classList.replace("bg-accent", "hover:bg-primary-light")
-      );
+  // Referenzen zu DOM-Elementen
+  const loginContainer = document.getElementById("login-container");
+  const appContent = document.getElementById("app-content");
+  const loginForm = document.getElementById("login-form");
+  const loginMessage = document.getElementById("login-message");
+  const loginLink = document.getElementById("login-link");
+  const registerLink = document.getElementById("register-link");
+  const userGreeting = document.getElementById("user-greeting");
+  const logoutBtn = document.getElementById("logout-btn");
 
-      // Add active state to clicked tab
-      this.classList.add("bg-accent", "text-white");
-      this.classList.remove("hover:bg-primary-light", "text-gray-300");
-
-      // Hide all tab contents
-      document.querySelectorAll(".tab-content").forEach((content) => {
-        content.classList.add("hidden");
-      });
-
-      // Show selected tab content
-      const tabId = this.getAttribute("data-tab");
-      document.getElementById(tabId + "-content").classList.remove("hidden");
-    });
+  // Auth-State-Listener
+  window.addEventListener("authStateChange", function (e) {
+    const { authenticated, user } = e.detail;
+    updateUI(authenticated, user);
   });
-}
 
-function initializeModules() {
-  initCreateModule();
-  initGroupsModule();
-  initScheduleModule();
-  initPlayoffsModule();
-  initDashboardModule();
-}
+  // Login-Formular Handler
+  loginForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-function initializeTournamentData() {
-  tournamentData.groups = [];
-  tournamentData.matches = [];
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-  const teamsPerGroup = Math.floor(
-    tournamentData.teamCount / tournamentData.groupCount
-  );
-  const remainingTeams = tournamentData.teamCount % tournamentData.groupCount;
+    const result = await window.auth.login(email, password);
 
-  for (let i = 0; i < tournamentData.groupCount; i++) {
-    const groupTeams = i < remainingTeams ? teamsPerGroup + 1 : teamsPerGroup;
-    const group = {
-      name: `Gruppe ${String.fromCharCode(65 + i)}`,
-      teams: [],
-    };
-
-    for (let j = 0; j < groupTeams; j++) {
-      group.teams.push({
-        id: `team-${i}-${j}`,
-        name: `Team ${j + 1}`,
-        games: 0,
-        matchesPlayed: 0,
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        points: 0,
-        goalDifference: 0,
-        form: [],
-      });
+    if (result.success) {
+      loginMessage.textContent = "Login erfolgreich!";
+      loginMessage.className = "mt-4 text-green-600";
+    } else {
+      loginMessage.textContent = result.message;
+      loginMessage.className = "mt-4 text-red-600";
     }
-    tournamentData.groups.push(group);
-  }
-}
+  });
 
-function updateTeamStats(
-  groupIndex,
-  team1Index,
-  team2Index,
-  homeGoals,
-  awayGoals
-) {
-  const group = tournamentData.groups[groupIndex];
-  const team1 = group.teams[team1Index];
-  const team2 = group.teams[team2Index];
+  // Logout-Button Handler
+  logoutBtn.addEventListener("click", async function () {
+    await window.auth.logout();
+  });
 
-  // Update match counts
-  team1.matchesPlayed++;
-  team2.matchesPlayed++;
-
-  // Update goals
-  team1.goalsFor += homeGoals;
-  team1.goalsAgainst += awayGoals;
-  team2.goalsFor += awayGoals;
-  team2.goalsAgainst += homeGoals;
-
-  // Update results
-  if (homeGoals > awayGoals) {
-    team1.wins++;
-    team2.losses++;
-    team1.points += 3;
-    updateTeamForm(team1, "W");
-    updateTeamForm(team2, "L");
-  } else if (homeGoals < awayGoals) {
-    team1.losses++;
-    team2.wins++;
-    team2.points += 3;
-    updateTeamForm(team1, "L");
-    updateTeamForm(team2, "W");
-  } else {
-    team1.draws++;
-    team2.draws++;
-    team1.points += 1;
-    team2.points += 1;
-    updateTeamForm(team1, "D");
-    updateTeamForm(team2, "D");
+  // UI basierend auf Auth-Status aktualisieren
+  function updateUI(authenticated, user) {
+    if (authenticated) {
+      loginContainer.classList.add("hidden");
+      appContent.classList.remove("hidden");
+      loginLink.classList.add("hidden");
+      registerLink.classList.add("hidden");
+      userGreeting.classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
+      userGreeting.textContent = `Hallo, ${user.username}`;
+    } else {
+      loginContainer.classList.remove("hidden");
+      appContent.classList.add("hidden");
+      loginLink.classList.remove("hidden");
+      registerLink.classList.remove("hidden");
+      userGreeting.classList.add("hidden");
+      logoutBtn.classList.add("hidden");
+    }
   }
 
-  // Recalculate derived stats
-  team1.games = team1.wins + team1.losses + team1.draws;
-  team2.games = team2.wins + team2.losses + team2.draws;
-  team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
-  team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
-}
+  function setupTabNavigation() {
+    const tabs = document.querySelectorAll("[data-tab]");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", function () {
+        // Remove active state from all tabs
+        tabs.forEach((t) =>
+          t.classList.replace("bg-accent", "hover:bg-primary-light")
+        );
 
-function removeMatchResults(groupIndex, team1Index, team2Index) {
-  const group = tournamentData.groups[groupIndex];
-  const team1 = group.teams[team1Index];
-  const team2 = group.teams[team2Index];
+        // Add active state to clicked tab
+        this.classList.add("bg-accent", "text-white");
+        this.classList.remove("hover:bg-primary-light", "text-gray-300");
 
-  // Find the match in tournamentData.matches
-  const match = tournamentData.matches.find(
-    (m) =>
-      m.groupIndex === groupIndex &&
-      m.team1Index === team1Index &&
-      m.team2Index === team2Index
-  );
+        // Hide all tab contents
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.add("hidden");
+        });
 
-  if (!match) return;
-
-  // Decrement match counts
-  team1.matchesPlayed--;
-  team2.matchesPlayed--;
-
-  // Remove goals
-  team1.goalsFor -= match.homeGoals;
-  team1.goalsAgainst -= match.awayGoals;
-  team2.goalsFor -= match.awayGoals;
-  team2.goalsAgainst -= match.homeGoals;
-
-  // Remove results
-  if (match.homeGoals > match.awayGoals) {
-    team1.wins--;
-    team2.losses--;
-    team1.points -= 3;
-    removeTeamForm(team1);
-    removeTeamForm(team2);
-  } else if (match.homeGoals < match.awayGoals) {
-    team1.losses--;
-    team2.wins--;
-    team2.points -= 3;
-    removeTeamForm(team1);
-    removeTeamForm(team2);
-  } else {
-    team1.draws--;
-    team2.draws--;
-    team1.points -= 1;
-    team2.points -= 1;
-    removeTeamForm(team1);
-    removeTeamForm(team2);
+        // Show selected tab content
+        const tabId = this.getAttribute("data-tab");
+        document.getElementById(tabId + "-content").classList.remove("hidden");
+      });
+    });
   }
 
-  // Recalculate derived stats
-  team1.games = team1.wins + team1.losses + team1.draws;
-  team2.games = team2.wins + team2.losses + team2.draws;
-  team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
-  team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
-}
-
-function updateTeamForm(team, result) {
-  team.form.unshift(result);
-  if (team.form.length > 3) {
-    team.form.pop();
+  function initializeModules() {
+    initCreateModule();
+    initGroupsModule();
+    initScheduleModule();
+    initPlayoffsModule();
+    initDashboardModule();
   }
-}
 
-function removeTeamForm(team) {
-  if (team.form.length > 0) {
-    team.form.shift();
+  function initializeTournamentData() {
+    tournamentData.groups = [];
+    tournamentData.matches = [];
+
+    const teamsPerGroup = Math.floor(
+      tournamentData.teamCount / tournamentData.groupCount
+    );
+    const remainingTeams = tournamentData.teamCount % tournamentData.groupCount;
+
+    let nameIndex = 0; // Laufender Index für die Teamnamen
+
+    for (let i = 0; i < tournamentData.groupCount; i++) {
+      const groupTeams = i < remainingTeams ? teamsPerGroup + 1 : teamsPerGroup;
+      const group = {
+        name: `Gruppe ${String.fromCharCode(65 + i)}`,
+        teams: [],
+      };
+
+      for (let j = 0; j < groupTeams; j++) {
+        group.teams.push({
+          id: `team-${i}-${j}`,
+          name:
+            tournamentData.teamNames &&
+            tournamentData.teamNames.length > nameIndex
+              ? tournamentData.teamNames[nameIndex]
+              : `Team ${nameIndex + 1}`,
+          games: 0,
+          matchesPlayed: 0,
+          wins: 0,
+          losses: 0,
+          draws: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          points: 0,
+          goalDifference: 0,
+          form: [],
+        });
+        nameIndex++;
+      }
+      tournamentData.groups.push(group);
+    }
   }
-}
 
-function showAlert(message, type = "success") {
-  const alertDiv = document.createElement("div");
-  alertDiv.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${
-    type === "success" ? "bg-green-600" : "bg-red-600"
-  }`;
-  alertDiv.textContent = message;
-  document.body.appendChild(alertDiv);
+  function updateTeamStats(
+    groupIndex,
+    team1Index,
+    team2Index,
+    homeGoals,
+    awayGoals
+  ) {
+    const group = tournamentData.groups[groupIndex];
+    const team1 = group.teams[team1Index];
+    const team2 = group.teams[team2Index];
 
-  setTimeout(() => {
-    alertDiv.remove();
-  }, 3000);
-}
+    // Update match counts
+    team1.matchesPlayed++;
+    team2.matchesPlayed++;
 
-// Make functions available globally
-window.tournamentData = tournamentData;
-window.initializeTournamentData = initializeTournamentData;
-window.updateTeamStats = updateTeamStats;
-window.removeMatchResults = removeMatchResults;
-window.showAlert = showAlert;
+    // Update goals
+    team1.goalsFor += homeGoals;
+    team1.goalsAgainst += awayGoals;
+    team2.goalsFor += awayGoals;
+    team2.goalsAgainst += homeGoals;
+
+    // Update results
+    if (homeGoals > awayGoals) {
+      team1.wins++;
+      team2.losses++;
+      team1.points += 3;
+      updateTeamForm(team1, "W");
+      updateTeamForm(team2, "L");
+    } else if (homeGoals < awayGoals) {
+      team1.losses++;
+      team2.wins++;
+      team2.points += 3;
+      updateTeamForm(team1, "L");
+      updateTeamForm(team2, "W");
+    } else {
+      team1.draws++;
+      team2.draws++;
+      team1.points += 1;
+      team2.points += 1;
+      updateTeamForm(team1, "D");
+      updateTeamForm(team2, "D");
+    }
+
+    // Recalculate derived stats
+    team1.games = team1.wins + team1.losses + team1.draws;
+    team2.games = team2.wins + team2.losses + team2.draws;
+    team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
+    team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
+  }
+
+  function removeMatchResults(groupIndex, team1Index, team2Index) {
+    const group = tournamentData.groups[groupIndex];
+    const team1 = group.teams[team1Index];
+    const team2 = group.teams[team2Index];
+
+    // Find the match in tournamentData.matches
+    const match = tournamentData.matches.find(
+      (m) =>
+        m.groupIndex === groupIndex &&
+        m.team1Index === team1Index &&
+        m.team2Index === team2Index
+    );
+
+    if (!match) return;
+
+    // Decrement match counts
+    team1.matchesPlayed--;
+    team2.matchesPlayed--;
+
+    // Remove goals
+    team1.goalsFor -= match.homeGoals;
+    team1.goalsAgainst -= match.awayGoals;
+    team2.goalsFor -= match.awayGoals;
+    team2.goalsAgainst -= match.homeGoals;
+
+    // Remove results
+    if (match.homeGoals > match.awayGoals) {
+      team1.wins--;
+      team2.losses--;
+      team1.points -= 3;
+      removeTeamForm(team1);
+      removeTeamForm(team2);
+    } else if (match.homeGoals < match.awayGoals) {
+      team1.losses--;
+      team2.wins--;
+      team2.points -= 3;
+      removeTeamForm(team1);
+      removeTeamForm(team2);
+    } else {
+      team1.draws--;
+      team2.draws--;
+      team1.points -= 1;
+      team2.points -= 1;
+      removeTeamForm(team1);
+      removeTeamForm(team2);
+    }
+
+    // Recalculate derived stats
+    team1.games = team1.wins + team1.losses + team1.draws;
+    team2.games = team2.wins + team2.losses + team2.draws;
+    team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
+    team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
+  }
+
+  function updateTeamForm(team, result) {
+    team.form.unshift(result);
+    if (team.form.length > 3) {
+      team.form.pop();
+    }
+  }
+
+  function removeTeamForm(team) {
+    if (team.form.length > 0) {
+      team.form.shift();
+    }
+  }
+
+  function showAlert(message, type = "success") {
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md shadow-lg text-white ${
+      type === "success" ? "bg-green-600" : "bg-red-600"
+    }`;
+    alertDiv.textContent = message;
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 3000);
+  }
+
+  // Make functions available globally
+  window.tournamentData = tournamentData;
+  window.initializeTournamentData = initializeTournamentData;
+  window.updateTeamStats = updateTeamStats;
+  window.removeMatchResults = removeMatchResults;
+  window.showAlert = showAlert;
+
+  // Initial UI-Update
+  updateUI(window.auth.isAuthenticated(), window.auth.currentUser);
+});
