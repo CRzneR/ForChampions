@@ -362,46 +362,61 @@
 
           <!-- Turnier erstellen Tab -->
           <div id="create-content" class="tab-content hidden">
-            <h1 class="text-2xl font-bold text-white mb-6">
-              Turnier erstellen
-            </h1>
-            <div class="bg-[#21222D] rounded-lg p-6 text-white">
-              <p>Hier können Sie ein neues Turnier erstellen.</p>
-            </div>
+            <!-- CreateTournamentComponent wird hier eingefügt -->
+            <div id="create-tournament-component"></div>
           </div>
 
           <!-- Gruppen Tab -->
           <div id="groups-content" class="tab-content hidden">
-            <h1 class="text-2xl font-bold text-white mb-6">Gruppen</h1>
-            <div class="bg-[#21222D] rounded-lg p-6 text-white">
-              <p>Hier können Sie die Gruppen verwalten.</p>
-            </div>
+            <!-- GroupsComponent wird hier eingefügt -->
+            <div id="groups-component"></div>
           </div>
 
           <!-- Spielplan Tab -->
           <div id="schedule-content" class="tab-content hidden">
-            <h1 class="text-2xl font-bold text-white mb-6">Spielplan</h1>
-            <div class="bg-[#21222D] rounded-lg p-6 text-white">
-              <p>Hier können Sie den Spielplan einsehen.</p>
-            </div>
+            <!-- ScheduleComponent wird hier eingefügt -->
+            <div id="schedule-component"></div>
           </div>
 
           <!-- Playoffs Tab -->
           <div id="playoffs-content" class="tab-content hidden">
-            <h1 class="text-2xl font-bold text-white mb-6">Playoffs</h1>
-            <div class="bg-[#21222D] rounded-lg p-6 text-white">
-              <p>Hier können Sie die Playoffs verwalten.</p>
-            </div>
+            <!-- PlayoffsComponent wird hier eingefügt -->
+            <div id="playoffs-component"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Inline JavaScript für grundlegende Funktionalität -->
-    <script>
+    <!-- JavaScript für Komponenten-Loading -->
+    <script type="module">
       // Lucide Icons initialisieren
       if (typeof lucide !== "undefined") {
         lucide.createIcons();
+      }
+
+      // Funktion zum Laden von Komponenten
+      async function loadComponent(componentName, containerId) {
+        try {
+          const response = await fetch(`/src/components/${componentName}`);
+          if (response.ok) {
+            const content = await response.text();
+            document.getElementById(containerId).innerHTML = content;
+          } else {
+            document.getElementById(containerId).innerHTML = `
+                        <div class="bg-red-900 text-white p-4 rounded-lg">
+                            <p>Fehler beim Laden der Komponente: ${componentName}</p>
+                            <p class="text-sm">Stellen Sie sicher, dass die Datei existiert und der Pfad korrekt ist.</p>
+                        </div>
+                    `;
+          }
+        } catch (error) {
+          document.getElementById(containerId).innerHTML = `
+                    <div class="bg-red-900 text-white p-4 rounded-lg">
+                        <p>Netzwerkfehler beim Laden der Komponente: ${componentName}</p>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
+                `;
+        }
       }
 
       // Tab-Wechsel für Auth-Formulare
@@ -435,7 +450,7 @@
 
       // Tab-Wechsel für Hauptnavigation
       document.querySelectorAll(".tab-button").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
           // Alle Tabs deaktivieren
           document.querySelectorAll(".tab-button").forEach((btn) => {
             btn.classList.remove("bg-[#99491C]", "text-white");
@@ -454,6 +469,34 @@
           // Gewählten Tab-Inhalt einblenden
           const tabId = button.getAttribute("data-tab") + "-content";
           document.getElementById(tabId).classList.remove("hidden");
+
+          // Komponente laden, wenn sie noch nicht geladen wurde
+          const tabName = button.getAttribute("data-tab");
+          if (
+            tabName === "create" &&
+            document.getElementById("create-tournament-component").innerHTML ===
+              ""
+          ) {
+            await loadComponent(
+              "CreateTournamentComponent.js",
+              "create-tournament-component"
+            );
+          } else if (
+            tabName === "groups" &&
+            document.getElementById("groups-component").innerHTML === ""
+          ) {
+            await loadComponent("GroupsComponent.js", "groups-component");
+          } else if (
+            tabName === "schedule" &&
+            document.getElementById("schedule-component").innerHTML === ""
+          ) {
+            await loadComponent("ScheduleComponent.js", "schedule-component");
+          } else if (
+            tabName === "playoffs" &&
+            document.getElementById("playoffs-component").innerHTML === ""
+          ) {
+            await loadComponent("PlayoffsComponent.js", "playoffs-component");
+          }
         });
       });
 
