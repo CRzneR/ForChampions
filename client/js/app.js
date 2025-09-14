@@ -1,3 +1,24 @@
+// ✅ OVERRIDE: Korrigiere alle API Aufrufe zu relativen Pfaden
+(function () {
+  const originalFetch = window.fetch;
+  window.fetch = function (...args) {
+    // Ersetze alle localhost:3001 Aufrufe
+    if (typeof args[0] === "string") {
+      if (args[0].includes("localhost:3001")) {
+        args[0] = args[0].replace("http://localhost:3001", "");
+        console.log("Fixed API call:", args[0]);
+      }
+      // Auch andere Localhost Varianten abfangen
+      else if (args[0].includes("127.0.0.1:3001")) {
+        args[0] = args[0].replace("http://127.0.0.1:3001", "");
+        console.log("Fixed API call:", args[0]);
+      }
+    }
+    return originalFetch.apply(this, args);
+  };
+})();
+
+// Tournament Data Management
 const tournamentData = {
   name: "",
   teamCount: 0,
@@ -7,11 +28,221 @@ const tournamentData = {
   matches: [],
 };
 
+// DOM-Elemente
+const loginContainer = document.getElementById("loginContainer");
+const mainApp = document.getElementById("mainApp");
+const loginTab = document.getElementById("loginTab");
+const registerTab = document.getElementById("registerTab");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginFormElement = document.getElementById("loginFormElement");
+const registerFormElement = document.getElementById("registerFormElement");
+const loginError = document.getElementById("loginError");
+const registerError = document.getElementById("registerError");
+const loginErrorText = document.getElementById("loginErrorText");
+const registerErrorText = document.getElementById("registerErrorText");
+const serverStatus = document.getElementById("serverStatus");
+const serverStatusText = document.getElementById("serverStatusText");
+const logoutButton = document.getElementById("logoutButton");
+const usernameDisplay = document.getElementById("usernameDisplay");
+
+// Prüfen ob bereits eingeloggt
+function checkLoginStatus() {
+  const token = localStorage.getItem("token");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  if (token && user) {
+    showMainApp(user);
+    return true;
+  }
+  return false;
+}
+
+// Haupt-App anzeigen
+function showMainApp(user) {
+  if (loginContainer) loginContainer.classList.add("hidden");
+  if (mainApp) mainApp.classList.remove("hidden");
+  if (usernameDisplay) {
+    usernameDisplay.textContent = user.username;
+  }
+
+  // Tournament-UI initialisieren
+  initializeTournamentUI();
+}
+
+// Logout-Funktion
+function logout() {
+  auth.logout();
+  if (mainApp) mainApp.classList.add("hidden");
+  if (loginContainer) loginContainer.classList.remove("hidden");
+  resetForms();
+}
+
+// Formulare zurücksetzen
+function resetForms() {
+  if (loginFormElement) loginFormElement.reset();
+  if (registerFormElement) registerFormElement.reset();
+  resetErrors();
+}
+
+// Fehler zurücksetzen
+function resetErrors() {
+  if (loginError) loginError.classList.add("hidden");
+  if (registerError) registerError.classList.add("hidden");
+}
+
+// Serververbindung testen
+async function testServerConnection() {
+  try {
+    if (serverStatus) {
+      serverStatus.classList.remove("hidden");
+      serverStatus.classList.remove("bg-green-900", "bg-red-900");
+      serverStatus.classList.add("bg-yellow-900");
+      serverStatusText.innerHTML =
+        '<i class="fas fa-sync-alt fa-spin mr-2"></i> Verbindung zum Server wird hergestellt...';
+    }
+
+    const response = await fetch("/api/test", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      if (serverStatus) {
+        serverStatus.classList.remove("bg-yellow-900");
+        serverStatus.classList.add("bg-green-900");
+        serverStatusText.innerHTML =
+          '<i class="fas fa-check-circle mr-2"></i> Verbindung zum Server erfolgreich';
+
+        setTimeout(() => {
+          serverStatus.classList.add("hidden");
+        }, 3000);
+      }
+    } else {
+      throw new Error("Server responded with error");
+    }
+  } catch (error) {
+    if (serverStatus) {
+      serverStatus.classList.remove("bg-yellow-900");
+      serverStatus.classList.add("bg-red-900");
+      serverStatusText.innerHTML =
+        '<i class="fas fa-exclamation-triangle mr-2"></i> Keine Verbindung zum Server. Stelle sicher, dass der Server läuft.';
+    }
+  }
+}
+
+// Login-Formular
+if (loginFormElement) {
+  loginFormElement.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+
+    // Loading-State anzeigen
+    const submitBtn = loginFormElement.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Wird angemeldet...";
+    submitBtn.disabled = true;
+
+    const result = await auth.login(email, password);
+
+    if (result.success) {
+      showMainApp(auth.user);
+    } else {
+      loginErrorText.textContent = result.message;
+      loginError.classList.remove("hidden");
+    }
+
+    // Loading-State zurücksetzen
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  });
+}
+
+// Registrierungs-Formular
+if (registerFormElement) {
+  registerFormElement.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const username = document.getElementById("registerUsername").value;
+    const email = document.getElementById("registerEmail").value;
+    const password = document.getElementById("registerPassword").value;
+    const confirmPassword = document.getElementById(
+      "registerConfirmPassword"
+    ).value;
+
+    // Loading-State anzeigen
+    const submitBtn = registerFormElement.querySelector(
+      'button[type="submit"]'
+    );
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Wird registriert...";
+    submitBtn.disabled = true;
+
+    const result = await auth.register(
+      username,
+      email,
+      password,
+      confirmPassword
+    );
+
+    if (result.success) {
+      showMainApp(auth.user);
+    } else {
+      registerErrorText.textContent = result.message;
+      registerError.classList.remove("hidden");
+    }
+
+    // Loading-State zurücksetzen
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  });
+}
+
+// Logout-Button
+if (logoutButton) {
+  logoutButton.addEventListener("click", logout);
+}
+
+// Tab-Wechsel
+if (loginTab && registerTab) {
+  loginTab.addEventListener("click", () => {
+    loginTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+    loginTab.classList.remove("text-gray-500");
+    registerTab.classList.add("text-gray-500");
+    registerTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+    loginForm.classList.remove("hidden");
+    registerForm.classList.add("hidden");
+    resetErrors();
+  });
+
+  registerTab.addEventListener("click", () => {
+    registerTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+    registerTab.classList.remove("text-gray-500");
+    loginTab.classList.add("text-gray-500");
+    loginTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+    registerForm.classList.remove("hidden");
+    loginForm.classList.add("hidden");
+    resetErrors();
+  });
+}
+
 // Initialize when DOM is loaded
 document.addEventListener("DOMContentLoaded", function () {
-  setupTabNavigation();
-  initializeModules();
-  document.querySelector('[data-tab="create"]').click();
+  const isLoggedIn = checkLoginStatus();
+
+  if (!isLoggedIn) {
+    testServerConnection();
+  } else {
+    setupTabNavigation();
+    initializeModules();
+    document.querySelector('[data-tab="dashboard"]').click();
+  }
+
+  if (typeof lucide !== "undefined") {
+    lucide.createIcons();
+  }
 });
 
 function setupTabNavigation() {
@@ -19,13 +250,14 @@ function setupTabNavigation() {
   tabs.forEach((tab) => {
     tab.addEventListener("click", function () {
       // Remove active state from all tabs
-      tabs.forEach((t) =>
-        t.classList.replace("bg-accent", "hover:bg-primary-light")
-      );
+      tabs.forEach((t) => {
+        t.classList.remove("bg-[#99491C]", "text-white");
+        t.classList.add("hover:bg-[#99491C]", "text-gray-300");
+      });
 
       // Add active state to clicked tab
-      this.classList.add("bg-accent", "text-white");
-      this.classList.remove("hover:bg-primary-light", "text-gray-300");
+      this.classList.add("bg-[#99491C]", "text-white");
+      this.classList.remove("hover:bg-[#99491C]", "text-gray-300");
 
       // Hide all tab contents
       document.querySelectorAll(".tab-content").forEach((content) => {
@@ -34,16 +266,31 @@ function setupTabNavigation() {
 
       // Show selected tab content
       const tabId = this.getAttribute("data-tab");
-      document.getElementById(tabId + "-content").classList.remove("hidden");
+      const contentElement = document.getElementById(tabId + "-content");
+      if (contentElement) {
+        contentElement.classList.remove("hidden");
+      }
     });
   });
 }
 
 function initializeModules() {
-  initCreateModule();
-  initGroupsModule();
-  initScheduleModule();
-  initPlayoffsModule();
+  if (typeof initCreateModule === "function") initCreateModule();
+  if (typeof initGroupsModule === "function") initGroupsModule();
+  if (typeof initScheduleModule === "function") initScheduleModule();
+  if (typeof initPlayoffsModule === "function") initPlayoffsModule();
+  if (typeof initDashboardModule === "function") initDashboardModule();
+}
+
+function initializeTournamentUI() {
+  setupTabNavigation();
+  initializeModules();
+
+  // Automatically show dashboard after login
+  const dashboardTab = document.querySelector('[data-tab="dashboard"]');
+  if (dashboardTab) {
+    dashboardTab.click();
+  }
 }
 
 function initializeTournamentData() {
