@@ -587,39 +587,20 @@
         }
       }
 
-      // Login-Formular - WICHTIG: Relativer Pfad!
+      // Login ersetzen:
       if (loginFormElement) {
         loginFormElement.addEventListener("submit", async (e) => {
           e.preventDefault();
-
           const email = document.getElementById("loginEmail").value;
           const password = document.getElementById("loginPassword").value;
 
-          try {
-            // ✅ KORRIGIERT: Relativer Pfad verwenden!
-            const response = await fetch("/api/login", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email, password }),
-            });
+          const result = await auth.login(email, password);
 
-            const data = await response.json();
-
-            if (response.ok) {
-              localStorage.setItem("token", data.token);
-              localStorage.setItem("user", JSON.stringify(data.user));
-              showMainApp(data.user);
-            } else {
-              if (loginErrorText) loginErrorText.textContent = data.message;
-              if (loginError) loginError.classList.remove("hidden");
-            }
-          } catch (error) {
-            if (loginErrorText)
-              loginErrorText.textContent =
-                "Netzwerkfehler. Bitte versuche es später erneut.";
-            if (loginError) loginError.classList.remove("hidden");
+          if (result.success) {
+            showMainApp(auth.user);
+          } else {
+            loginErrorText.textContent = result.message;
+            loginError.classList.remove("hidden");
           }
         });
       }

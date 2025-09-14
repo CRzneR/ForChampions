@@ -16,15 +16,15 @@ console.log("MONGODB_URI vorhanden:", !!process.env.MONGODB_URI);
 console.log("JWT_SECRET vorhanden:", !!process.env.JWT_SECRET);
 
 // Kritische Environment Variables validieren
-if (!process.env.MONGODB_URI) {
-  console.error(
-    "❌ FEHLER: MONGODB_URI Environment Variable ist nicht gesetzt!"
-  );
-  console.error(
-    "Bitte setzen Sie MONGODB_URI in Render.com Environment Variables"
-  );
-  process.exit(1);
-}
+const requiredEnvVars = ["MONGODB_URI"];
+requiredEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.error(
+      `❌ FEHLER: ${envVar} Environment Variable ist nicht gesetzt!`
+    );
+    process.exit(1);
+  }
+});
 
 if (!process.env.JWT_SECRET) {
   console.warn(
@@ -37,8 +37,6 @@ if (!process.env.JWT_SECRET) {
 const allowedOrigins = [
   "https://forchampions.onrender.com",
   "http://localhost:3000",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
   "http://127.0.0.1:3000",
 ];
 
@@ -60,8 +58,15 @@ app.use(
   })
 );
 
+// Middleware
 app.use(express.json());
-app.use(express.static("."));
+app.use(express.static(__dirname)); // Korrigiert: __dirname verwenden
+
+// Request Logging Middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
 
 // MongoDB Verbindung
 const connectDB = async () => {
@@ -82,6 +87,15 @@ const connectDB = async () => {
   }
 };
 
+// MongoDB Event Handler
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB Verbindungsfehler:", err);
+});
+
+mongoose.connection.on("disconnected", () => {
+  console.log("ℹ️  MongoDB Verbindung getrennt");
+});
+
 connectDB();
 
 // User Schema
@@ -93,6 +107,25 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", userSchema);
+
+// JWT Auth Middleware
+const auth = (req, res, next) => {
+  try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Zugriff verweigert. Kein Token vorhanden." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: "Ungültiges Token." });
+  }
+};
 
 // Test-Route
 app.get("/api/test", (req, res) => {
@@ -116,15 +149,54 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Geschützte Route Beispiel
+app.get("/api/protected", auth, (req, res) => {
+  res.json({
+    message: "Geschützter Bereich",
+    user: req.user,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Benutzerprofil abrufen
+app.get("/api/profile", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Benutzer nicht gefunden" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Profilfehler:", error);
+    res.status(500).json({ message: "Serverfehler beim Abrufen des Profils" });
+  }
+});
+
 // Registrierungs-Endpoint
 app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
+    // Validierung
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: "Alle Felder sind erforderlich" });
+    }
+
+    if (password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Passwort muss mindestens 6 Zeichen lang sein" });
+    }
+
     // Prüfen ob Benutzer existiert
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
-      return res.status(400).json({ message: "Benutzer existiert bereits" });
+      return res.status(400).json({
+        message:
+          existingUser.email === email
+            ? "E-Mail wird bereits verwendet"
+            : "Benutzername wird bereits verwendet",
+      });
     }
 
     // Passwort hashen
@@ -155,6 +227,13 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validierung
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "E-Mail und Passwort sind erforderlich" });
+    }
+
     // Benutzer finden
     const user = await User.findOne({ email });
     if (!user) {
@@ -183,10 +262,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Static files serving
-app.use(express.static("."));
-
-// Fallback für Frontend-Routes
+// Fallback für Frontend-Routes (SPA Support)
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -196,4 +272,5 @@ app.listen(PORT, () => {
   console.log(`✅ Server läuft auf Port ${PORT}`);
   console.log(`🏠 Environment: ${process.env.NODE_ENV || "development"}`);
   console.log(`🌐 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`🔐 Test Login: http://localhost:${PORT}/api/test`);
 });
