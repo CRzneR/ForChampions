@@ -1,13 +1,11 @@
 // /src/main.js - Haupt-Einstiegspunkt der Anwendung
 
-import { TournamentApp } from "./app.js";
-import { initCreateModule } from "./components/CreateTournamentComponent.js";
-import { initDashboardModule } from "./components/DashboardComponent.js";
-import { initGroupsModule } from "./components/GroupsComponent.js";
-import { initScheduleModule } from "./components/ScheduleComponent.js";
-import { initPlayoffsModule } from "./components/PlayoffsComponent.js";
-import { initGroupsModule } from "./components/GroupsComponent.js";
-import { initScheduleModule } from "./components/ScheduleComponent.js";
+import { TournamentApp } from "./src/app.js";
+import { initCreateModule } from "./src/components/CreateTournamentComponent.js";
+import { initDashboardModule } from "./src/components/DashboardComponent.js";
+import { initGroupsModule } from "./src/components/GroupsComponent.js";
+import { initScheduleModule } from "./src/components/ScheduleComponent.js";
+import { initPlayoffsModule } from "./src/components/PlayoffsComponent.js";
 
 // Globale Initialisierungsfunktionen für Module
 window.initCreateModule = (tournamentService) => {

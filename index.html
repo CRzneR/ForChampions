@@ -4,11 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Turnier Manager</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.0/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="assets/css/style.css" />
+    <!-- Tailwind CSS CDN (könnte auch lokal eingebunden werden) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#CA5818",
+              secondary: "#EF1475",
+              dark: {
+                100: "#21222D",
+                200: "#2D303D",
+                900: "#14181D",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="src/style.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <link
       rel="stylesheet"
@@ -20,6 +35,12 @@
       }
       .login-container {
         background: linear-gradient(135deg, #21222d 0%, #14181d 100%);
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
       }
     </style>
   </head>
@@ -251,20 +272,11 @@
           <div class="flex justify-between h-16">
             <div class="flex items-center">
               <div class="flex-shrink-0 flex items-center">
-                <img
-                  class="h-8 w-auto"
-                  src="https://via.placeholder.com/150"
-                  alt="Logo"
-                />
-                <span
-                  class="ml-2 text-xl font-bold hidden"
-                  id="tournament-title"
-                ></span>
                 <span
                   class="ml-2 text-4xl font-bold bg-gradient-to-r from-[#CA5818] to-[#EF1475] bg-clip-text text-transparent"
-                  id="app-title"
-                  >For Champions</span
                 >
+                  For Champions
+                </span>
               </div>
             </div>
             <div class="flex items-center">
@@ -292,7 +304,7 @@
               <li>
                 <button
                   data-tab="dashboard"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
                 >
                   <i data-lucide="grid" class="w-5 h-5 mr-3"></i>
                   Dashboard
@@ -301,7 +313,7 @@
               <li>
                 <button
                   data-tab="create"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
                 >
                   <i data-lucide="plus" class="w-5 h-5 mr-3"></i>
                   Turnier erstellen
@@ -310,8 +322,7 @@
               <li>
                 <button
                   data-tab="groups"
-                  id="groups-tab"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
                 >
                   <i data-lucide="users" class="w-5 h-5 mr-3"></i>
                   Gruppen
@@ -320,7 +331,7 @@
               <li>
                 <button
                   data-tab="schedule"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
                 >
                   <i data-lucide="calendar" class="w-5 h-5 mr-3"></i>
                   Spielplan
@@ -329,7 +340,7 @@
               <li>
                 <button
                   data-tab="playoffs"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
                 >
                   <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
                   Playoffs
@@ -337,25 +348,8 @@
               </li>
               <li>
                 <button
-                  data-tab="settings"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
-                >
-                  <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
-                  Einstellungen
-                </button>
-              </li>
-              <li>
-                <button
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
-                >
-                  <i data-lucide="help-circle" class="w-5 h-5 mr-3"></i>
-                  Hilfe
-                </button>
-              </li>
-              <li>
-                <button
                   id="logoutButton"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-red-600 hover:text-white text-gray-300 flex items-center"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-red-600 hover:text-white text-gray-300 flex items-center mt-4"
                 >
                   <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
                   Abmelden
@@ -369,94 +363,58 @@
         <div class="flex-1 p-8">
           <!-- Dashboard Tab -->
           <div id="dashboard-content" class="tab-content">
-            <div class="grid grid-cols-1 gap-6">
-              <!-- Übersichtskarten -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Turnierinfo Karte -->
-                <div
-                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
-                >
-                  <h3 class="text-lg font-bold text-white mb-4">Turnierinfo</h3>
-                  <div id="tournament-info-content" class="text-gray-300">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
-                </div>
-
-                <!-- Aktuelle Spiele Karte -->
-                <div
-                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
-                >
-                  <h3 class="text-lg font-bold text-white mb-4">
-                    Nächste Spiele
-                  </h3>
-                  <div id="current-matches-content">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
-                </div>
-
-                <!-- Top Teams Karte -->
-                <div
-                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
-                >
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-white">Top Teams</h3>
-                    <span
-                      class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded-full"
-                    >
-                      Playoff-Plätze
-                    </span>
-                  </div>
-                  <div id="top-teams-content">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- Gruppenübersicht -->
-              <div
-                class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800"
-              >
-                <div class="px-6 py-4 border-b border-gray-800">
-                  <h2 class="text-xl font-bold text-white">Gruppenübersicht</h2>
-                  <p
-                    id="dashboard-groups-info"
-                    class="text-sm text-gray-400 mt-1"
-                  >
-                    <span id="dashboard-tournament-name"></span> Aktuelle
-                    Gruppenstände
-                  </p>
-                </div>
-                <div
-                  id="dashboard-groups-container"
-                  class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                ></div>
-              </div>
+            <h1 class="text-2xl font-bold text-white mb-6">Dashboard</h1>
+            <div class="bg-[#21222D] rounded-lg p-6 text-white">
+              <p>
+                Willkommen beim Turnier-Manager. Wählen Sie eine Option aus dem
+                Menü.
+              </p>
             </div>
           </div>
 
           <!-- Turnier erstellen Tab -->
-          <div id="create-content" class="tab-content hidden"></div>
+          <div id="create-content" class="tab-content hidden">
+            <h1 class="text-2xl font-bold text-white mb-6">
+              Turnier erstellen
+            </h1>
+            <div class="bg-[#21222D] rounded-lg p-6 text-white">
+              <p>Hier können Sie ein neues Turnier erstellen.</p>
+            </div>
+          </div>
 
           <!-- Gruppen Tab -->
-          <div id="groups-content" class="tab-content hidden"></div>
+          <div id="groups-content" class="tab-content hidden">
+            <h1 class="text-2xl font-bold text-white mb-6">Gruppen</h1>
+            <div class="bg-[#21222D] rounded-lg p-6 text-white">
+              <p>Hier können Sie die Gruppen verwalten.</p>
+            </div>
+          </div>
 
           <!-- Spielplan Tab -->
-          <div id="schedule-content" class="tab-content hidden"></div>
+          <div id="schedule-content" class="tab-content hidden">
+            <h1 class="text-2xl font-bold text-white mb-6">Spielplan</h1>
+            <div class="bg-[#21222D] rounded-lg p-6 text-white">
+              <p>Hier können Sie den Spielplan einsehen.</p>
+            </div>
+          </div>
 
           <!-- Playoffs Tab -->
-          <div id="playoffs-content" class="tab-content hidden"></div>
+          <div id="playoffs-content" class="tab-content hidden">
+            <h1 class="text-2xl font-bold text-white mb-6">Playoffs</h1>
+            <div class="bg-[#21222D] rounded-lg p-6 text-white">
+              <p>Hier können Sie die Playoffs verwalten.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- JavaScript Dateien -->
+    <!-- JavaScript Module -->
     <script type="module" src="src/main.js"></script>
-    <script src="client/js/auth.js"></script>
-    <script src="client/js/app.js"></script>
-    <script src="client/js/create.js"></script>
-    <script src="client/js/groups.js"></script>
-    <script src="client/js/schedule.js"></script>
-    <script src="client/js/playoffs.js"></script>
-    <script src="client/js/dashboard.js"></script>
+
+    <!-- Lucide Icons initialisieren -->
+    <script>
+      lucide.createIcons();
+    </script>
   </body>
 </html>
