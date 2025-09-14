@@ -6,6 +6,7 @@ export class LoginComponent {
   }
 
   init() {
+    // Forms & Fehlercontainer
     this.loginForm = document.getElementById("loginFormElement");
     this.registerForm = document.getElementById("registerFormElement");
     this.loginError = document.getElementById("loginError");
@@ -13,28 +14,37 @@ export class LoginComponent {
     this.loginErrorText = document.getElementById("loginErrorText");
     this.registerErrorText = document.getElementById("registerErrorText");
 
+    // Inputs
+    this.loginEmail = document.getElementById("loginEmail");
+    this.loginPassword = document.getElementById("loginPassword");
+    this.registerUsername = document.getElementById("registerUsername");
+    this.registerEmail = document.getElementById("registerEmail");
+    this.registerPassword = document.getElementById("registerPassword");
+    this.registerConfirmPassword = document.getElementById(
+      "registerConfirmPassword"
+    );
+
     this.bindEvents();
   }
 
   bindEvents() {
-    if (this.loginForm) {
-      this.loginForm.addEventListener("submit", (e) => this.handleLogin(e));
-    }
-
-    if (this.registerForm) {
-      this.registerForm.addEventListener("submit", (e) =>
-        this.handleRegister(e)
-      );
-    }
+    this.loginForm?.addEventListener("submit", this.handleLogin);
+    this.registerForm?.addEventListener("submit", this.handleRegister);
   }
 
-  async handleLogin(e) {
+  unbindEvents() {
+    this.loginForm?.removeEventListener("submit", this.handleLogin);
+    this.registerForm?.removeEventListener("submit", this.handleRegister);
+  }
+
+  handleLogin = async (e) => {
     e.preventDefault();
-    const email = document.getElementById("loginEmail").value;
-    const password = document.getElementById("loginPassword").value;
+    this.resetErrors();
+
+    const email = this.loginEmail?.value || "";
+    const password = this.loginPassword?.value || "";
 
     this.setLoadingState(this.loginForm, true, "Wird angemeldet...");
-
     const result = await this.authService.login(email, password);
 
     if (result.success) {
@@ -44,16 +54,16 @@ export class LoginComponent {
     }
 
     this.setLoadingState(this.loginForm, false, "Anmelden");
-  }
+  };
 
-  async handleRegister(e) {
+  handleRegister = async (e) => {
     e.preventDefault();
-    const username = document.getElementById("registerUsername").value;
-    const email = document.getElementById("registerEmail").value;
-    const password = document.getElementById("registerPassword").value;
-    const confirmPassword = document.getElementById(
-      "registerConfirmPassword"
-    ).value;
+    this.resetErrors();
+
+    const username = this.registerUsername?.value || "";
+    const email = this.registerEmail?.value || "";
+    const password = this.registerPassword?.value || "";
+    const confirmPassword = this.registerConfirmPassword?.value || "";
 
     if (password !== confirmPassword) {
       this.showError(
@@ -65,7 +75,6 @@ export class LoginComponent {
     }
 
     this.setLoadingState(this.registerForm, true, "Wird registriert...");
-
     const result = await this.authService.register(
       username,
       email,
@@ -84,10 +93,12 @@ export class LoginComponent {
     }
 
     this.setLoadingState(this.registerForm, false, "Registrieren");
-  }
+  };
 
   setLoadingState(form, isLoading, text) {
-    const submitBtn = form.querySelector('button[type="submit"]');
+    const submitBtn = form?.querySelector('button[type="submit"]');
+    if (!submitBtn) return;
+
     if (isLoading) {
       submitBtn.setAttribute("data-original-text", submitBtn.textContent);
       submitBtn.textContent = text;
@@ -100,12 +111,13 @@ export class LoginComponent {
   }
 
   showError(errorElement, errorTextElement, message) {
+    if (!errorElement || !errorTextElement) return;
     errorTextElement.textContent = message;
     errorElement.classList.remove("hidden");
   }
 
   resetErrors() {
-    if (this.loginError) this.loginError.classList.add("hidden");
-    if (this.registerError) this.registerError.classList.add("hidden");
+    this.loginError?.classList.add("hidden");
+    this.registerError?.classList.add("hidden");
   }
 }

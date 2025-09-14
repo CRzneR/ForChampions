@@ -1,6 +1,6 @@
 // /src/components/CreateTournamentComponent.js
 
-import { Tournament } from "../models/Tournament.js";
+import { Tournament } from "../models.js";
 import { showAlert } from "../utils/helpers.js";
 
 export class CreateTournamentComponent {
@@ -35,108 +35,108 @@ export class CreateTournamentComponent {
 
   renderBasicInfoForm(container) {
     container.innerHTML = `
-            <div class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 max-w-2xl mx-auto">
-                <div class="px-6 py-4 border-b border-gray-800">
-                    <h2 class="text-2xl font-bold text-white">Neues Turnier erstellen</h2>
-                </div>
-                <div class="p-6">
-                    <form id="tournament-form" class="space-y-6">
-                        <div>
-                            <label for="tournament-name" class="block text-sm font-medium text-gray-300 mb-1">
-                                Turniername
-                            </label>
-                            <input type="text" id="tournament-name" 
-                                class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
-                                placeholder="Mein Turnier" required>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <label for="team-count" class="block text-sm font-medium text-gray-300 mb-1">
-                                    Anzahl der Teams
-                                </label>
-                                <input type="number" id="team-count" min="2" max="32"
-                                    class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
-                                    placeholder="8" required>
-                            </div>
-                            
-                            <div>
-                                <label for="group-count" class="block text-sm font-medium text-gray-300 mb-1">
-                                    Anzahl der Gruppen
-                                </label>
-                                <input type="number" id="group-count" min="1" max="8"
-                                    class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
-                                    placeholder="2" required>
-                            </div>
-                            
-                            <div>
-                                <label for="playoff-spots" class="block text-sm font-medium text-gray-300 mb-1">
-                                    Playoff-Plätze pro Gruppe
-                                </label>
-                                <input type="number" id="playoff-spots" min="1" max="4"
-                                    class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
-                                    placeholder="2" required>
-                            </div>
-                        </div>
-                        
-                        <div class="pt-2">
-                            <button type="submit" 
-                                class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] hover:opacity-90 text-white py-2.5 px-4 rounded-md transition-colors">
-                                Weiter zu Teamnamen
-                            </button>
-                        </div>
-                    </form>
-                </div>
+      <div class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 max-w-2xl mx-auto">
+        <div class="px-6 py-4 border-b border-gray-800">
+          <h2 class="text-2xl font-bold text-white">Neues Turnier erstellen</h2>
+        </div>
+        <div class="p-6">
+          <form id="tournament-form" class="space-y-6">
+            <div>
+              <label for="tournament-name" class="block text-sm font-medium text-gray-300 mb-1">
+                Turniername
+              </label>
+              <input type="text" id="tournament-name" 
+                class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
+                placeholder="Mein Turnier" required>
             </div>
-        `;
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label for="team-count" class="block text-sm font-medium text-gray-300 mb-1">
+                  Anzahl der Teams
+                </label>
+                <input type="number" id="team-count" min="2" max="32"
+                  class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
+                  placeholder="8" required>
+              </div>
+              
+              <div>
+                <label for="group-count" class="block text-sm font-medium text-gray-300 mb-1">
+                  Anzahl der Gruppen
+                </label>
+                <input type="number" id="group-count" min="1" max="8"
+                  class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
+                  placeholder="2" required>
+              </div>
+              
+              <div>
+                <label for="playoff-spots" class="block text-sm font-medium text-gray-300 mb-1">
+                  Playoff-Plätze pro Gruppe
+                </label>
+                <input type="number" id="playoff-spots" min="1" max="4"
+                  class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
+                  placeholder="2" required>
+              </div>
+            </div>
+            
+            <div class="pt-2">
+              <button type="submit" 
+                class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] hover:opacity-90 text-white py-2.5 px-4 rounded-md transition-colors">
+                Weiter zu Teamnamen
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
   }
 
   renderTeamNamesForm(container) {
     let inputsHtml = "";
     for (let i = 0; i < this.tournamentData.teamCount; i++) {
       inputsHtml += `
-                <div class="team-input mb-4">
-                    <label class="block text-sm font-medium text-gray-300 mb-1">
-                        Team ${i + 1} Name
-                    </label>
-                    <input type="text" value="Team ${i + 1}" 
-                        class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
-                        data-team-index="${i}" required>
-                </div>
-            `;
+        <div class="team-input mb-4">
+          <label class="block text-sm font-medium text-gray-300 mb-1">
+            Team ${i + 1} Name
+          </label>
+          <input type="text" value="Team ${i + 1}" 
+            class="w-full bg-[#2D303D] border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-[#CA5818] focus:border-transparent" 
+            data-team-index="${i}" required>
+        </div>
+      `;
     }
 
     container.innerHTML = `
-            <div class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 max-w-2xl mx-auto">
-                <div class="px-6 py-4 border-b border-gray-800">
-                    <h2 class="text-2xl font-bold text-white">Teamnamen eingeben</h2>
-                    <p class="text-sm text-gray-400">Bitte geben Sie die Namen aller Teams ein.</p>
-                </div>
-                <div class="p-6">
-                    <form id="team-names-form" class="space-y-4">
-                        <div class="mb-4">
-                            <button type="button" id="shuffle-teams" 
-                                class="w-full bg-yellow-600 hover:bg-yellow-500 text-white py-2.5 px-4 rounded-md mb-4">
-                                Teams mischen
-                            </button>
-                        </div>
-                        <div id="team-inputs" class="max-h-96 overflow-y-auto pr-2">
-                            ${inputsHtml}
-                        </div>
-                        <div class="flex space-x-4 pt-4">
-                            <button type="button" id="back-button" 
-                                class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2.5 px-4 rounded-md">
-                                Zurück
-                            </button>
-                            <button type="submit" 
-                                class="flex-1 bg-gradient-to-r from-[#CA5818] to-[#EF1475] hover:opacity-90 text-white py-2.5 px-4 rounded-md">
-                                Turnier erstellen
-                            </button>
-                        </div>
-                    </form>
-                </div>
+      <div class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 max-w-2xl mx-auto">
+        <div class="px-6 py-4 border-b border-gray-800">
+          <h2 class="text-2xl font-bold text-white">Teamnamen eingeben</h2>
+          <p class="text-sm text-gray-400">Bitte geben Sie die Namen aller Teams ein.</p>
+        </div>
+        <div class="p-6">
+          <form id="team-names-form" class="space-y-4">
+            <div class="mb-4">
+              <button type="button" id="shuffle-teams" 
+                class="w-full bg-yellow-600 hover:bg-yellow-500 text-white py-2.5 px-4 rounded-md mb-4">
+                Teams mischen
+              </button>
             </div>
-        `;
+            <div id="team-inputs" class="max-h-96 overflow-y-auto pr-2">
+              ${inputsHtml}
+            </div>
+            <div class="flex space-x-4 pt-4">
+              <button type="button" id="back-button" 
+                class="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2.5 px-4 rounded-md">
+                Zurück
+              </button>
+              <button type="submit" 
+                class="flex-1 bg-gradient-to-r from-[#CA5818] to-[#EF1475] hover:opacity-90 text-white py-2.5 px-4 rounded-md">
+                Turnier erstellen
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
   }
 
   bindEvents() {
@@ -213,17 +213,14 @@ export class CreateTournamentComponent {
       if (result.success) {
         showAlert("Turnier erfolgreich erstellt!", "success");
 
-        // Turniernamen in der Navbar anzeigen
         document.getElementById("tournament-title").textContent =
           this.tournamentData.name;
         document.getElementById("tournament-title").classList.remove("hidden");
 
-        // Callback aufrufen
         if (this.onTournamentCreated) {
           this.onTournamentCreated(this.tournamentService.currentTournament);
         }
 
-        // Zum Dashboard wechseln
         document.querySelector('[data-tab="dashboard"]').click();
       }
     } catch (error) {
@@ -246,13 +243,11 @@ export class CreateTournamentComponent {
     );
     const values = inputs.map((input) => input.value);
 
-    // Fisher-Yates Shuffle
     for (let i = values.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [values[i], values[j]] = [values[j], values[i]];
     }
 
-    // Werte zurück setzen
     inputs.forEach((input, index) => {
       input.value = values[index];
     });
@@ -303,11 +298,10 @@ export class CreateTournamentComponent {
   }
 }
 
-// Modul-Initialisierungsfunktion für die main.js
+// Initialisierung für main.js
 export function initCreateModule(tournamentService) {
   const onTournamentCreated = (tournament) => {
     console.log("Turnier erstellt:", tournament);
-    // Hier können Sie weitere Aktionen nach der Turniererstellung durchführen
   };
 
   const createComponent = new CreateTournamentComponent(
@@ -316,7 +310,6 @@ export function initCreateModule(tournamentService) {
   );
   createComponent.init();
 
-  // Beim Tab-Wechsel neu rendern
   const createTab = document.querySelector('[data-tab="create"]');
   if (createTab) {
     createTab.addEventListener("click", () => {
