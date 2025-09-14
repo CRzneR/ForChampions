@@ -477,13 +477,7 @@
       const usernameDisplay = document.getElementById("usernameDisplay");
 
       // API Basis URL - verwendet relative Pfade
-      function getApiBaseUrl() {
-        // Im Production verwendet same-origin, im Development localhost
-        return window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1"
-          ? "http://localhost:3000"
-          : "";
-      }
+      const API_BASE_URL = "";
 
       // Prüfen ob bereits eingeloggt
       function checkLoginStatus() {
