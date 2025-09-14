@@ -1,10 +1,18 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const path = require("path");
-require("dotenv").config();
+import express from "express";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import dotenv from "dotenv";
+
+// ES Module equivalent for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config();
 
 const app = express();
 
@@ -51,7 +59,7 @@ app.use(
 );
 
 app.use(express.json());
-app.use(express.static("."));
+app.use(express.static(__dirname));
 
 // MongoDB Verbindung
 const connectDB = async () => {
@@ -85,6 +93,17 @@ app.get("/api/test", (req, res) => {
     timestamp: new Date().toISOString(),
     database:
       mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+  });
+});
+
+// Health Check Route
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "OK",
+    message: "Server ist online",
+    database:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -163,4 +182,5 @@ app.get("*", (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server läuft auf Port ${PORT}`);
+  console.log(`🌐 Health Check: http://localhost:${PORT}/api/health`);
 });
