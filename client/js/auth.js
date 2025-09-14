@@ -2,7 +2,7 @@ class Auth {
   constructor() {
     this.token = localStorage.getItem("token");
     this.user = JSON.parse(localStorage.getItem("user"));
-    this.apiBaseUrl = "http://localhost:3000/api"; // Anpassen an deine Server-URL
+    this.apiBaseUrl = "http://localhost:3001/api"; // Anpassen an deine Server-URL
   }
 
   // Login-Funktion
