@@ -216,7 +216,7 @@ function showAlert(message, type = "success") {
 
   setTimeout(() => {
     alertDiv.remove();
-  }, 3001);
+  }, 3000);
 }
 
 // Make functions available globally

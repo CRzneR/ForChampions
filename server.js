@@ -36,10 +36,10 @@ if (!process.env.JWT_SECRET) {
 // CORS Konfiguration
 const allowedOrigins = [
   "https://forchampions.onrender.com",
-  "http://localhost:3001",
-  "http://localhost:3001",
-  "http://127.0.0.1:3001",
-  "http://127.0.0.1:3001",
+  "http://localhost:3000",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3000",
 ];
 
 app.use(
@@ -191,7 +191,7 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server läuft auf Port ${PORT}`);
   console.log(`🏠 Environment: ${process.env.NODE_ENV || "development"}`);
