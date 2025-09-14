@@ -456,6 +456,26 @@
 
     <!-- Login/Logout Script -->
     <script>
+      // ✅ OVERRIDE: Korrigiere alle API Aufrufe zu relativen Pfaden
+      (function () {
+        const originalFetch = window.fetch;
+        window.fetch = function (...args) {
+          // Ersetze alle localhost:3001 Aufrufe
+          if (typeof args[0] === "string") {
+            if (args[0].includes("localhost:3001")) {
+              args[0] = args[0].replace("http://localhost:3001", "");
+              console.log("Fixed API call:", args[0]);
+            }
+            // Auch andere Localhost Varianten abfangen
+            else if (args[0].includes("127.0.0.1:3001")) {
+              args[0] = args[0].replace("http://127.0.0.1:3001", "");
+              console.log("Fixed API call:", args[0]);
+            }
+          }
+          return originalFetch.apply(this, args);
+        };
+      })();
+
       // DOM-Elemente
       const loginContainer = document.getElementById("loginContainer");
       const mainApp = document.getElementById("mainApp");
