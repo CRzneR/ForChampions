@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Turnier Manager</title>
-    <!-- Tailwind CSS CDN (könnte auch lokal eingebunden werden) -->
+    <title>Turnier Manager - For Champions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -23,32 +22,18 @@
         },
       };
     </script>
-    <link rel="stylesheet" href="src/style.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    <style>
-      .auth-transition {
-        transition: all 0.3s ease;
-      }
-      .login-container {
-        background: linear-gradient(135deg, #21222d 0%, #14181d 100%);
-      }
-      .tab-content {
-        display: none;
-      }
-      .tab-content.active {
-        display: block;
-      }
-    </style>
   </head>
-  <body class="bg-[#14181D]">
+  <body class="bg-[#14181D] min-h-screen">
     <!-- Login Container (initial sichtbar) -->
     <div
       id="loginContainer"
-      class="min-h-screen flex items-center justify-center p-4 login-container"
+      class="min-h-screen flex items-center justify-center p-4"
+      style="background: linear-gradient(135deg, #21222d 0%, #14181d 100%)"
     >
       <div
         class="bg-[#21222D] rounded-2xl shadow-xl overflow-hidden w-full max-w-md border border-gray-700"
@@ -81,7 +66,7 @@
         </div>
 
         <!-- Login Form -->
-        <div id="loginForm" class="p-6 auth-transition">
+        <div id="loginForm" class="p-6 transition-all duration-300 ease-in-out">
           <h2 class="text-2xl font-bold text-center text-white mb-2">
             Willkommen zurück
           </h2>
@@ -154,7 +139,10 @@
         </div>
 
         <!-- Register Form -->
-        <div id="registerForm" class="p-6 auth-transition hidden">
+        <div
+          id="registerForm"
+          class="p-6 transition-all duration-300 ease-in-out hidden"
+        >
           <h2 class="text-2xl font-bold text-center text-white mb-2">
             Account erstellen
           </h2>
@@ -287,7 +275,7 @@
                 >
                   <span class="sr-only">Profil</span>
                   <i data-lucide="user" class="h-6 w-6 mr-2"></i>
-                  <span id="usernameDisplay" class="text-white"></span>
+                  <span id="usernameDisplay" class="text-white">Benutzer</span>
                 </button>
               </div>
             </div>
@@ -304,7 +292,7 @@
               <li>
                 <button
                   data-tab="dashboard"
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center tab-button active"
                 >
                   <i data-lucide="grid" class="w-5 h-5 mr-3"></i>
                   Dashboard
@@ -412,9 +400,87 @@
     <!-- JavaScript Module -->
     <script type="module" src="src/main.js"></script>
 
-    <!-- Lucide Icons initialisieren -->
+    <!-- Tab-Navigation und Login/Register-Logik -->
     <script>
+      // Lucide Icons initialisieren
       lucide.createIcons();
+
+      // Tab-Wechsel für Auth-Formulare
+      document.getElementById("loginTab").addEventListener("click", () => {
+        document
+          .getElementById("loginTab")
+          .classList.add("text-[#CA5818]", "border-b-2", "border-[#CA5818]");
+        document.getElementById("loginTab").classList.remove("text-gray-500");
+        document.getElementById("registerTab").classList.add("text-gray-500");
+        document
+          .getElementById("registerTab")
+          .classList.remove("text-[#CA5818]", "border-b-2", "border-[#CA5818]");
+        document.getElementById("loginForm").classList.remove("hidden");
+        document.getElementById("registerForm").classList.add("hidden");
+      });
+
+      document.getElementById("registerTab").addEventListener("click", () => {
+        document
+          .getElementById("registerTab")
+          .classList.add("text-[#CA5818]", "border-b-2", "border-[#CA5818]");
+        document
+          .getElementById("registerTab")
+          .classList.remove("text-gray-500");
+        document.getElementById("loginTab").classList.add("text-gray-500");
+        document
+          .getElementById("loginTab")
+          .classList.remove("text-[#CA5818]", "border-b-2", "border-[#CA5818]");
+        document.getElementById("registerForm").classList.remove("hidden");
+        document.getElementById("loginForm").classList.add("hidden");
+      });
+
+      // Tab-Wechsel für Hauptnavigation
+      document.querySelectorAll(".tab-button").forEach((button) => {
+        button.addEventListener("click", () => {
+          // Alle Tabs deaktivieren
+          document.querySelectorAll(".tab-button").forEach((btn) => {
+            btn.classList.remove("bg-[#99491C]", "text-white");
+            btn.classList.add("text-gray-300");
+          });
+
+          // Aktiven Tab markieren
+          button.classList.add("bg-[#99491C]", "text-white");
+          button.classList.remove("text-gray-300");
+
+          // Alle Tab-Inhalte ausblenden
+          document.querySelectorAll(".tab-content").forEach((content) => {
+            content.classList.add("hidden");
+          });
+
+          // Gewählten Tab-Inhalt einblenden
+          const tabId = button.getAttribute("data-tab") + "-content";
+          document.getElementById(tabId).classList.remove("hidden");
+        });
+      });
+
+      // Logout-Button
+      document.getElementById("logoutButton").addEventListener("click", () => {
+        document.getElementById("mainApp").classList.add("hidden");
+        document.getElementById("loginContainer").classList.remove("hidden");
+      });
+
+      // Login-Formular (Demo)
+      document
+        .getElementById("loginFormElement")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          document.getElementById("loginContainer").classList.add("hidden");
+          document.getElementById("mainApp").classList.remove("hidden");
+        });
+
+      // Register-Formular (Demo)
+      document
+        .getElementById("registerFormElement")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          document.getElementById("loginContainer").classList.add("hidden");
+          document.getElementById("mainApp").classList.remove("hidden");
+        });
     </script>
   </body>
 </html>
