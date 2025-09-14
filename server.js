@@ -191,7 +191,7 @@ app.get("/dashboard.html", (req, res) => {
 });
 
 // Port aus Environment Variable oder Default
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Server starten
 app.listen(PORT, () => {

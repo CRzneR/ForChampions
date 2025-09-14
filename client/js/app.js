@@ -1,5 +1,3 @@
-// app.js - Main Application Logic for Tournament Manager
-
 const tournamentData = {
   name: "",
   teamCount: 0,
@@ -46,7 +44,6 @@ function initializeModules() {
   initGroupsModule();
   initScheduleModule();
   initPlayoffsModule();
-  initDashboardModule();
 }
 
 function initializeTournamentData() {
