@@ -476,9 +476,6 @@
       const logoutButton = document.getElementById("logoutButton");
       const usernameDisplay = document.getElementById("usernameDisplay");
 
-      // API Basis URL - verwendet relative Pfade
-      const API_BASE_URL = "";
-
       // Prüfen ob bereits eingeloggt
       function checkLoginStatus() {
         const token = localStorage.getItem("token");
@@ -522,7 +519,7 @@
         if (registerError) registerError.classList.add("hidden");
       }
 
-      // Serververbindung testen
+      // Serververbindung testen - WICHTIG: Relativer Pfad!
       async function testServerConnection() {
         try {
           if (serverStatus) {
@@ -538,7 +535,7 @@
               '<i class="fas fa-sync-alt fa-spin mr-2"></i> Verbindung zum Server wird hergestellt...';
           }
 
-          // Relative URL verwenden
+          // ✅ KORRIGIERT: Relativer Pfad verwenden!
           const response = await fetch("/api/test", {
             method: "GET",
             headers: {
@@ -570,7 +567,7 @@
         }
       }
 
-      // Login-Formular
+      // Login-Formular - WICHTIG: Relativer Pfad!
       if (loginFormElement) {
         loginFormElement.addEventListener("submit", async (e) => {
           e.preventDefault();
@@ -579,7 +576,7 @@
           const password = document.getElementById("loginPassword").value;
 
           try {
-            // Relative URL verwenden
+            // ✅ KORRIGIERT: Relativer Pfad verwenden!
             const response = await fetch("/api/login", {
               method: "POST",
               headers: {
@@ -607,7 +604,7 @@
         });
       }
 
-      // Registrierungs-Formular
+      // Registrierungs-Formular - WICHTIG: Relativer Pfad!
       if (registerFormElement) {
         registerFormElement.addEventListener("submit", async (e) => {
           e.preventDefault();
@@ -628,7 +625,7 @@
           }
 
           try {
-            // Relative URL verwenden
+            // ✅ KORRIGIERT: Relativer Pfad verwenden!
             const response = await fetch("/api/register", {
               method: "POST",
               headers: {
