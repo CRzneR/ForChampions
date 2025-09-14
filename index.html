@@ -397,13 +397,12 @@
       </div>
     </div>
 
-    <!-- JavaScript Module -->
-    <script type="module" src="src/main.js"></script>
-
-    <!-- Tab-Navigation und Login/Register-Logik -->
+    <!-- Inline JavaScript für grundlegende Funktionalität -->
     <script>
       // Lucide Icons initialisieren
-      lucide.createIcons();
+      if (typeof lucide !== "undefined") {
+        lucide.createIcons();
+      }
 
       // Tab-Wechsel für Auth-Formulare
       document.getElementById("loginTab").addEventListener("click", () => {
