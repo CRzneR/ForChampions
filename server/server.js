@@ -7,9 +7,9 @@ const path = require("path");
 require("dotenv").config();
 
 // ✅ Models aus dem Backend laden
-const { User } = require("./server/models/User");
-const { Tournament } = require("./server/models/Tournament");
-const { Match } = require("./server/models/Match");
+const { User } = require("./models/User");
+const { Tournament } = require("./models/Tournament");
+const { Match } = require("./models/Match");
 
 const app = express();
 

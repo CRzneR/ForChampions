@@ -4,8 +4,8 @@
   "description": "Tournament management application",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
     "build": "npm install",
     "test": "echo \"No tests specified\" && exit 0"
   },
