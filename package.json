@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "npm install && npx tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css --minify",
-    "build-css": "npx tailwindcss -i ./src/input.css -o ./assets/css/tailwind.css --watch"
+    "build": "npm install",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,9 +19,7 @@
     "sqlite3": "^5.1.6"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.21",
     "nodemon": "^3.0.1",
-    "postcss": "^8.5.6",
     "tailwindcss": "^4.1.11"
   },
   "keywords": [
