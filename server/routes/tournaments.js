@@ -1,0 +1,104 @@
+const express = require("express");
+const { Tournament } = require("../models/Tournament");
+const { Team } = require("../models/Team");
+const authenticateToken = require("../middleware/auth");
+
+const router = express.Router();
+
+// --- Turnier erstellen ---
+router.post("/", authenticateToken, async (req, res) => {
+  try {
+    const { name, description, teams, groupCount } = req.body;
+
+    // Teams speichern (oder vorhandene wiederverwenden)
+    const teamDocs = [];
+    for (const t of teams) {
+      let team = await Team.findOne({ name: t.name });
+      if (!team) {
+        team = new Team({ name: t.name });
+        await team.save();
+      }
+      teamDocs.push(team._id);
+    }
+
+    // Turnier anlegen
+    const tournament = new Tournament({
+      name,
+      description,
+      createdBy: req.user.userId,
+      teams: teamDocs,
+      groups: Array.from({ length: groupCount || 4 }, (_, i) => ({
+        name: `Gruppe ${String.fromCharCode(65 + i)}`,
+        teams: [],
+        matches: [],
+      })),
+    });
+
+    await tournament.save();
+    await tournament.populate("teams");
+
+    res.status(201).json(tournament);
+  } catch (error) {
+    console.error("Turnier Erstellungsfehler:", error);
+    res.status(500).json({ message: "Fehler beim Erstellen des Turniers" });
+  }
+});
+
+// --- Alle Turniere eines Users ---
+router.get("/", authenticateToken, async (req, res) => {
+  try {
+    const tournaments = await Tournament.find({ createdBy: req.user.userId })
+      .populate("teams")
+      .sort({ createdAt: -1 });
+
+    res.json(tournaments);
+  } catch (error) {
+    console.error("Turnier Abfragefehler:", error);
+    res.status(500).json({ message: "Fehler beim Abrufen der Turniere" });
+  }
+});
+
+// --- Bestimmtes Turnier laden ---
+router.get("/:id", authenticateToken, async (req, res) => {
+  try {
+    const tournament = await Tournament.findById(req.params.id)
+      .populate("teams")
+      .populate("groups.teams")
+      .populate("groups.matches.team1")
+      .populate("groups.matches.team2")
+      .populate("playoffs.rounds.matches.team1")
+      .populate("playoffs.rounds.matches.team2")
+      .populate("playoffs.rounds.matches.winner");
+
+    if (!tournament) {
+      return res.status(404).json({ message: "Turnier nicht gefunden" });
+    }
+
+    res.json(tournament);
+  } catch (error) {
+    console.error("Turnier Abfragefehler:", error);
+    res.status(500).json({ message: "Fehler beim Abrufen des Turniers" });
+  }
+});
+
+// --- Turnier aktualisieren ---
+router.put("/:id", authenticateToken, async (req, res) => {
+  try {
+    const tournament = await Tournament.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).populate("teams");
+
+    if (!tournament) {
+      return res.status(404).json({ message: "Turnier nicht gefunden" });
+    }
+
+    res.json(tournament);
+  } catch (error) {
+    console.error("Turnier Aktualisierungsfehler:", error);
+    res.status(500).json({ message: "Fehler beim Aktualisieren des Turniers" });
+  }
+});
+
+module.exports = router;
