@@ -1,78 +1,39 @@
-import express from "express";
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import dotenv from "dotenv";
-
-// ES Module equivalent for __dirname
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-dotenv.config();
+const express = require("express");
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const cors = require("cors");
+const path = require("path");
+require("dotenv").config();
 
 const app = express();
 
-// Environment Variables prüfen
-console.log("Environment Variables Check:");
-console.log("NODE_ENV:", process.env.NODE_ENV);
-console.log("PORT:", process.env.PORT);
-console.log("MONGODB_URI vorhanden:", !!process.env.MONGODB_URI);
-console.log("JWT_SECRET vorhanden:", !!process.env.JWT_SECRET);
-
-// Kritische Environment Variables validieren
-if (!process.env.MONGODB_URI) {
-  console.error(
-    "❌ FEHLER: MONGODB_URI Environment Variable ist nicht gesetzt!"
-  );
-  process.exit(1);
-}
-
-if (!process.env.JWT_SECRET) {
-  console.warn(
-    "⚠️  WARNUNG: JWT_SECRET ist nicht gesetzt. Verwende Standardwert."
-  );
-  process.env.JWT_SECRET = "fallback_secret_key_change_in_production";
-}
-
-// CORS Konfiguration
-const allowedOrigins = [
-  "https://forchampions.onrender.com",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) === -1) {
-        return callback(new Error("CORS not allowed"), false);
-      }
-      return callback(null, true);
-    },
-    credentials: true,
-  })
-);
-
+// CORS für alle Ursprünge erlauben (Entwicklung)
+app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static("."));
 
-// MongoDB Verbindung
+// Einfaches Logging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// MongoDB Verbindung mit verbesserter Fehlerbehandlung
 const connectDB = async () => {
   try {
-    console.log("Verbinde mit MongoDB...");
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log("✅ MongoDB erfolgreich verbunden");
+    await mongoose.connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ MongoDB verbunden");
   } catch (error) {
     console.error("❌ MongoDB Verbindungsfehler:", error.message);
-    process.exit(1);
+    console.log(
+      "⚠️  Server läuft ohne Datenbank. Es werden Mock-Daten verwendet."
+    );
   }
 };
-
 connectDB();
 
 // User Schema
@@ -85,7 +46,7 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", userSchema);
 
-// Test-Route
+// Test-Route - immer verfügbar
 app.get("/api/test", (req, res) => {
   res.json({
     message: "Server ist erreichbar!",
@@ -96,39 +57,58 @@ app.get("/api/test", (req, res) => {
   });
 });
 
-// Health Check Route
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "Server ist online",
-    database:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    timestamp: new Date().toISOString(),
-  });
-});
+// Mock-Benutzer für Testzwecke (falls DB nicht verfügbar)
+const mockUsers = [];
 
 // Registrierungs-Endpoint
 app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Prüfen ob Benutzer existiert
+    // Prüfen ob MongoDB verfügbar
+    if (mongoose.connection.readyState !== 1) {
+      // Mock-Registrierung ohne DB
+      if (mockUsers.find((u) => u.email === email || u.username === username)) {
+        return res.status(400).json({ message: "Benutzer existiert bereits" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = {
+        id: Date.now(),
+        username,
+        email,
+        password: hashedPassword,
+      };
+      mockUsers.push(newUser);
+
+      const token = jwt.sign(
+        { userId: newUser.id },
+        process.env.JWT_SECRET || "cham_app_secret",
+        { expiresIn: "24h" }
+      );
+
+      return res.status(201).json({
+        message: "Benutzer erfolgreich registriert (Mock)",
+        token,
+        user: { id: newUser.id, username, email },
+      });
+    }
+
+    // Normale Registrierung mit MongoDB
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
     if (existingUser) {
       return res.status(400).json({ message: "Benutzer existiert bereits" });
     }
 
-    // Passwort hashen
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Neuen Benutzer erstellen
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    // JWT Token erstellen
-    const token = jwt.sign({ userId: newUser._id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { userId: newUser._id },
+      process.env.JWT_SECRET || "cham_app_secret",
+      { expiresIn: "24h" }
+    );
 
     res.status(201).json({
       message: "Benutzer erfolgreich registriert",
@@ -146,22 +126,48 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Benutzer finden
+    // Prüfen ob MongoDB verfügbar
+    if (mongoose.connection.readyState !== 1) {
+      // Mock-Login ohne DB
+      const user = mockUsers.find((u) => u.email === email);
+      if (!user) {
+        return res.status(400).json({ message: "Ungültige Anmeldedaten" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "Ungültige Anmeldedaten" });
+      }
+
+      const token = jwt.sign(
+        { userId: user.id },
+        process.env.JWT_SECRET || "cham_app_secret",
+        { expiresIn: "24h" }
+      );
+
+      return res.json({
+        message: "Login erfolgreich (Mock)",
+        token,
+        user: { id: user.id, username: user.username, email: user.email },
+      });
+    }
+
+    // Normales Login mit MongoDB
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Ungültige Anmeldedaten" });
     }
 
-    // Passwort vergleichen
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(400).json({ message: "Ungültige Anmeldedaten" });
     }
 
-    // JWT Token erstellen
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET || "cham_app_secret",
+      { expiresIn: "24h" }
+    );
 
     res.json({
       message: "Login erfolgreich",
@@ -174,13 +180,22 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Fallback für Frontend-Routes
-app.get("*", (req, res) => {
+// Hauptseite
+app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
+// Dashboard-Seite
+app.get("/dashboard.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "dashboard.html"));
+});
+
+// Port aus Environment Variable oder Default
 const PORT = process.env.PORT || 3000;
+
+// Server starten
 app.listen(PORT, () => {
-  console.log(`✅ Server läuft auf Port ${PORT}`);
-  console.log(`🌐 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`✅ Server läuft auf http://localhost:${PORT}`);
+  console.log(`📋 Test-Route: http://localhost:${PORT}/api/test`);
+  console.log(`🏠 Hauptseite: http://localhost:${PORT}`);
 });

@@ -3,163 +3,697 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Turnier Manager - For Champions</title>
+    <title>Turnier Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: "#CA5818",
-              secondary: "#EF1475",
-              dark: {
-                100: "#21222D",
-                200: "#2D303D",
-                900: "#14181D",
-              },
-            },
-          },
-        },
-      };
-    </script>
+    <link rel="stylesheet" href="assets/css/style.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <style>
+      .auth-transition {
+        transition: all 0.3s ease;
+      }
+      .login-container {
+        background: linear-gradient(135deg, #21222d 0%, #14181d 100%);
+      }
+    </style>
   </head>
-  <body class="bg-[#14181D] min-h-screen">
-    <!-- Login Container -->
+  <body class="bg-[#14181D]">
+    <!-- Login Container (initial sichtbar) -->
     <div
       id="loginContainer"
-      class="min-h-screen flex items-center justify-center p-4"
+      class="min-h-screen flex items-center justify-center p-4 login-container"
     >
-      <!-- Login form will be rendered here by LoginComponent -->
+      <div
+        class="bg-[#21222D] rounded-2xl shadow-xl overflow-hidden w-full max-w-md border border-gray-700"
+      >
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-700">
+          <button
+            id="loginTab"
+            class="flex-1 py-4 px-6 text-center font-medium text-[#CA5818] border-b-2 border-[#CA5818]"
+          >
+            Login
+          </button>
+          <button
+            id="registerTab"
+            class="flex-1 py-4 px-6 text-center font-medium text-gray-500"
+          >
+            Registrieren
+          </button>
+        </div>
+
+        <!-- Statusanzeige -->
+        <div
+          id="serverStatus"
+          class="px-6 py-2 bg-yellow-900 text-yellow-200 text-sm hidden"
+        >
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          <span id="serverStatusText"
+            >Verbindung zum Server wird hergestellt...</span
+          >
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="p-6 auth-transition">
+          <h2 class="text-2xl font-bold text-center text-white mb-2">
+            Willkommen zurück
+          </h2>
+          <p class="text-center text-gray-400 mb-6">
+            Melde dich an, um fortzufahren
+          </p>
+
+          <div
+            id="loginError"
+            class="bg-red-900 text-red-200 p-3 rounded-lg mb-4 hidden"
+          >
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span id="loginErrorText"></span>
+          </div>
+
+          <form id="loginFormElement">
+            <div class="mb-4">
+              <label for="loginEmail" class="block text-gray-300 mb-2"
+                >E-Mail</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-envelope text-gray-500"></i>
+                </div>
+                <input
+                  type="email"
+                  id="loginEmail"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="deine@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label for="loginPassword" class="block text-gray-300 mb-2"
+                >Passwort</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-lock text-gray-500"></i>
+                </div>
+                <input
+                  type="password"
+                  id="loginPassword"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition duration-300"
+            >
+              Anmelden
+            </button>
+          </form>
+
+          <div class="text-center mt-4">
+            <a href="#" class="text-[#CA5818] hover:text-[#EF1475] text-sm"
+              >Passwort vergessen?</a
+            >
+          </div>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="p-6 auth-transition hidden">
+          <h2 class="text-2xl font-bold text-center text-white mb-2">
+            Account erstellen
+          </h2>
+          <p class="text-center text-gray-400 mb-6">
+            Registriere dich für dein Konto
+          </p>
+
+          <div
+            id="registerError"
+            class="bg-red-900 text-red-200 p-3 rounded-lg mb-4 hidden"
+          >
+            <i class="fas fa-exclamation-circle mr-2"></i>
+            <span id="registerErrorText"></span>
+          </div>
+
+          <form id="registerFormElement">
+            <div class="mb-4">
+              <label for="registerUsername" class="block text-gray-300 mb-2"
+                >Benutzername</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-user text-gray-500"></i>
+                </div>
+                <input
+                  type="text"
+                  id="registerUsername"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="benutzername"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="registerEmail" class="block text-gray-300 mb-2"
+                >E-Mail</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-envelope text-gray-500"></i>
+                </div>
+                <input
+                  type="email"
+                  id="registerEmail"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="deine@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label for="registerPassword" class="block text-gray-300 mb-2"
+                >Passwort</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-lock text-gray-500"></i>
+                </div>
+                <input
+                  type="password"
+                  id="registerPassword"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label
+                for="registerConfirmPassword"
+                class="block text-gray-300 mb-2"
+                >Passwort bestätigen</label
+              >
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-lock text-gray-500"></i>
+                </div>
+                <input
+                  type="password"
+                  id="registerConfirmPassword"
+                  class="pl-10 w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#CA5818] focus:border-transparent text-white"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition duration-300"
+            >
+              Registrieren
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
 
-    <!-- Main Application -->
+    <!-- Haupt-App (initial versteckt) -->
     <div id="mainApp" class="hidden">
+      <!-- Hauptnavigation oben -->
       <nav class="bg-[#21222D] shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between h-16">
             <div class="flex items-center">
-              <span
-                class="ml-2 text-4xl font-bold bg-gradient-to-r from-[#CA5818] to-[#EF1475] bg-clip-text text-transparent"
-              >
-                For Champions
-              </span>
-              <span
-                id="tournament-title"
-                class="hidden ml-4 text-lg text-gray-300"
-              ></span>
+              <div class="flex-shrink-0 flex items-center">
+                <img
+                  class="h-8 w-auto"
+                  src="https://via.placeholder.com/150"
+                  alt="Logo"
+                />
+                <span
+                  class="ml-2 text-xl font-bold hidden"
+                  id="tournament-title"
+                ></span>
+                <span
+                  class="ml-2 text-4xl font-bold bg-gradient-to-r from-[#CA5818] to-[#EF1475] bg-clip-text text-transparent"
+                  id="app-title"
+                  >For Champions</span
+                >
+              </div>
             </div>
             <div class="flex items-center">
-              <button
-                id="logoutButton"
-                class="p-1 rounded-full text-gray-400 hover:text-white"
-              >
-                <i data-lucide="log-out" class="h-6 w-6"></i>
-              </button>
+              <div class="ml-4 flex items-center md:ml-6">
+                <button
+                  id="userMenuButton"
+                  class="p-1 rounded-full text-gray-400 hover:text-white focus:outline-none flex items-center"
+                >
+                  <span class="sr-only">Profil</span>
+                  <i data-lucide="user" class="h-6 w-6 mr-2"></i>
+                  <span id="usernameDisplay" class="text-white"></span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
       <div class="flex">
-        <!-- Sidebar Navigation -->
-        <div class="w-64 bg-[#21222D] h-screen sticky top-0 p-4">
-          <ul class="space-y-2">
-            <li>
-              <button
-                data-tab="dashboard"
-                class="tab-button w-full text-left px-4 py-2 rounded-md text-gray-300 hover:bg-[#2D303D] hover:text-white"
-              >
-                Dashboard
-              </button>
-            </li>
-            <li>
-              <button
-                data-tab="create"
-                class="tab-button w-full text-left px-4 py-2 rounded-md text-gray-300 hover:bg-[#2D303D] hover:text-white"
-              >
-                Turnier erstellen
-              </button>
-            </li>
-            <li>
-              <button
-                data-tab="groups"
-                class="tab-button w-full text-left px-4 py-2 rounded-md text-gray-300 hover:bg-[#2D303D] hover:text-white"
-              >
-                Gruppen
-              </button>
-            </li>
-            <li>
-              <button
-                data-tab="schedule"
-                class="tab-button w-full text-left px-4 py-2 rounded-md text-gray-300 hover:bg-[#2D303D] hover:text-white"
-              >
-                Spielplan
-              </button>
-            </li>
-            <li>
-              <button
-                data-tab="playoffs"
-                class="tab-button w-full text-left px-4 py-2 rounded-md text-gray-300 hover:bg-[#2D303D] hover:text-white"
-              >
-                Playoffs
-              </button>
-            </li>
-          </ul>
+        <!-- Vertikale Navigation links -->
+        <div class="w-64 bg-[#21222D] shadow-md h-screen sticky top-0">
+          <div class="p-4">
+            <h2 class="text-lg text-white font-semibold mb-4">Navigation</h2>
+            <ul class="space-y-2">
+              <li>
+                <button
+                  data-tab="dashboard"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="grid" class="w-5 h-5 mr-3"></i>
+                  Dashboard
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="create"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="plus" class="w-5 h-5 mr-3"></i>
+                  Turnier erstellen
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="groups"
+                  id="groups-tab"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="users" class="w-5 h-5 mr-3"></i>
+                  Gruppen
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="schedule"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="calendar" class="w-5 h-5 mr-3"></i>
+                  Spielplan
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="playoffs"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="bar-chart-3" class="w-5 h-5 mr-3"></i>
+                  Playoffs
+                </button>
+              </li>
+              <li>
+                <button
+                  data-tab="settings"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="settings" class="w-5 h-5 mr-3"></i>
+                  Einstellungen
+                </button>
+              </li>
+              <li>
+                <button
+                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="help-circle" class="w-5 h-5 mr-3"></i>
+                  Hilfe
+                </button>
+              </li>
+              <li>
+                <button
+                  id="logoutButton"
+                  class="w-full text-left px-4 py-2 rounded hover:bg-red-600 hover:text-white text-gray-300 flex items-center"
+                >
+                  <i data-lucide="log-out" class="w-5 h-5 mr-3"></i>
+                  Abmelden
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <!-- Main Content -->
+        <!-- Hauptinhalt -->
         <div class="flex-1 p-8">
+          <!-- Dashboard Tab -->
           <div id="dashboard-content" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div class="bg-[#21222D] rounded-lg p-6 border border-gray-800">
-                <h3 class="text-lg font-bold text-white mb-4">
-                  Turnier Informationen
-                </h3>
-                <div id="tournament-info-content"></div>
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Übersichtskarten -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Turnierinfo Karte -->
+                <div
+                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
+                >
+                  <h3 class="text-lg font-bold text-white mb-4">Turnierinfo</h3>
+                  <div id="tournament-info-content" class="text-gray-300">
+                    <!-- Wird von JavaScript gefüllt -->
+                  </div>
+                </div>
+
+                <!-- Aktuelle Spiele Karte -->
+                <div
+                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
+                >
+                  <h3 class="text-lg font-bold text-white mb-4">
+                    Nächste Spiele
+                  </h3>
+                  <div id="current-matches-content">
+                    <!-- Wird von JavaScript gefüllt -->
+                  </div>
+                </div>
+
+                <!-- Top Teams Karte -->
+                <div
+                  class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
+                >
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white">Top Teams</h3>
+                    <span
+                      class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded-full"
+                    >
+                      Playoff-Plätze
+                    </span>
+                  </div>
+                  <div id="top-teams-content">
+                    <!-- Wird von JavaScript gefüllt -->
+                  </div>
+                </div>
               </div>
-              <div class="bg-[#21222D] rounded-lg p-6 border border-gray-800">
-                <h3 class="text-lg font-bold text-white mb-4">
-                  Aktuelle Spiele
-                </h3>
-                <div id="current-matches-content"></div>
-              </div>
-              <div class="bg-[#21222D] rounded-lg p-6 border border-gray-800">
-                <h3 class="text-lg font-bold text-white mb-4">Top Teams</h3>
-                <div id="top-teams-content"></div>
-              </div>
-            </div>
-            <div class="mt-6">
-              <h3
-                class="text-lg font-bold text-white mb-4"
-                id="dashboard-groups-info"
-              >
-                Gruppen
-              </h3>
+
+              <!-- Gruppenübersicht -->
               <div
-                id="dashboard-groups-container"
-                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-              ></div>
+                class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800"
+              >
+                <div class="px-6 py-4 border-b border-gray-800">
+                  <h2 class="text-xl font-bold text-white">Gruppenübersicht</h2>
+                  <p
+                    id="dashboard-groups-info"
+                    class="text-sm text-gray-400 mt-1"
+                  >
+                    <span id="dashboard-tournament-name"></span> Aktuelle
+                    Gruppenstände
+                  </p>
+                </div>
+                <div
+                  id="dashboard-groups-container"
+                  class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                ></div>
+              </div>
             </div>
           </div>
+
+          <!-- Turnier erstellen Tab -->
           <div id="create-content" class="tab-content hidden"></div>
+
+          <!-- Gruppen Tab -->
           <div id="groups-content" class="tab-content hidden"></div>
+
+          <!-- Spielplan Tab -->
           <div id="schedule-content" class="tab-content hidden"></div>
+
+          <!-- Playoffs Tab -->
           <div id="playoffs-content" class="tab-content hidden"></div>
         </div>
       </div>
     </div>
 
-    <!-- Load the main JavaScript module -->
-    <script type="module" src="./src/main.js"></script>
+    <!-- JavaScript Dateien -->
+    <script src="client/js/app.js"></script>
+    <script src="client/js/create.js"></script>
+    <script src="client/js/groups.js"></script>
+    <script src="client/js/schedule.js"></script>
+    <script src="client/js/playoffs.js"></script>
+    <script src="client/js/dashboard.js"></script>
 
-    <!-- Initialize Lucide icons -->
+    <!-- Login/Logout Script -->
     <script>
+      lucide.createIcons();
+
+      // DOM-Elemente
+      const loginContainer = document.getElementById("loginContainer");
+      const mainApp = document.getElementById("mainApp");
+      const loginTab = document.getElementById("loginTab");
+      const registerTab = document.getElementById("registerTab");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const loginFormElement = document.getElementById("loginFormElement");
+      const registerFormElement = document.getElementById(
+        "registerFormElement"
+      );
+      const loginError = document.getElementById("loginError");
+      const registerError = document.getElementById("registerError");
+      const loginErrorText = document.getElementById("loginErrorText");
+      const registerErrorText = document.getElementById("registerErrorText");
+      const serverStatus = document.getElementById("serverStatus");
+      const serverStatusText = document.getElementById("serverStatusText");
+      const logoutButton = document.getElementById("logoutButton");
+      const usernameDisplay = document.getElementById("usernameDisplay");
+
+      // Server-URL
+      const API_BASE_URL = "";
+
+      // Prüfen ob bereits eingeloggt
+      function checkLoginStatus() {
+        const token = localStorage.getItem("token");
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+
+        if (token && user) {
+          showMainApp(user);
+          return true;
+        }
+        return false;
+      }
+
+      // Haupt-App anzeigen
+      function showMainApp(user) {
+        loginContainer.classList.add("hidden");
+        mainApp.classList.remove("hidden");
+        usernameDisplay.textContent = user.username;
+      }
+
+      // Logout-Funktion
+      function logout() {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        mainApp.classList.add("hidden");
+        loginContainer.classList.remove("hidden");
+        resetForms();
+      }
+
+      // Formulare zurücksetzen
+      function resetForms() {
+        if (loginFormElement) loginFormElement.reset();
+        if (registerFormElement) registerFormElement.reset();
+        resetErrors();
+      }
+
+      // Serververbindung testen
+      async function testServerConnection() {
+        try {
+          serverStatus.classList.remove("hidden");
+          serverStatus.classList.remove(
+            "bg-green-900",
+            "text-green-200",
+            "bg-red-900",
+            "text-red-200"
+          );
+          serverStatus.classList.add("bg-yellow-900", "text-yellow-200");
+          serverStatusText.innerHTML =
+            '<i class="fas fa-sync-alt fa-spin mr-2"></i> Verbindung zum Server wird hergestellt...';
+
+          const response = await fetch(`${API_BASE_URL}/api/test`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            serverStatus.classList.remove("bg-yellow-900", "text-yellow-200");
+            serverStatus.classList.add("bg-green-900", "text-green-200");
+            serverStatusText.innerHTML =
+              '<i class="fas fa-check-circle mr-2"></i> Verbindung zum Server erfolgreich';
+
+            setTimeout(() => {
+              serverStatus.classList.add("hidden");
+            }, 3000);
+          } else {
+            throw new Error("Server responded with error");
+          }
+        } catch (error) {
+          serverStatus.classList.remove("bg-yellow-900", "text-yellow-200");
+          serverStatus.classList.add("bg-red-900", "text-red-200");
+          serverStatusText.innerHTML =
+            '<i class="fas fa-exclamation-triangle mr-2"></i> Keine Verbindung zum Server. Stelle sicher, dass der Server läuft.';
+
+          if (
+            loginFormElement &&
+            loginFormElement.querySelector('button[type="submit"]')
+          ) {
+            loginFormElement.querySelector(
+              'button[type="submit"]'
+            ).disabled = true;
+          }
+          if (
+            registerFormElement &&
+            registerFormElement.querySelector('button[type="submit"]')
+          ) {
+            registerFormElement.querySelector(
+              'button[type="submit"]'
+            ).disabled = true;
+          }
+        }
+      }
+
+      // Tab-Wechsel
+      if (loginTab && registerTab) {
+        loginTab.addEventListener("click", () => {
+          loginTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+          loginTab.classList.remove("text-gray-500");
+          registerTab.classList.add("text-gray-500");
+          registerTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+          loginForm.classList.remove("hidden");
+          registerForm.classList.add("hidden");
+          resetErrors();
+        });
+
+        registerTab.addEventListener("click", () => {
+          registerTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+          registerTab.classList.remove("text-gray-500");
+          loginTab.classList.add("text-gray-500");
+          loginTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+          registerForm.classList.remove("hidden");
+          loginForm.classList.add("hidden");
+          resetErrors();
+        });
+      }
+
+      // Fehler zurücksetzen
+      function resetErrors() {
+        if (loginError) loginError.classList.add("hidden");
+        if (registerError) registerError.classList.add("hidden");
+      }
+
+      // Login-Formular
+      if (loginFormElement) {
+        loginFormElement.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const email = document.getElementById("loginEmail").value;
+          const password = document.getElementById("loginPassword").value;
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/login`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              localStorage.setItem("token", data.token);
+              localStorage.setItem("user", JSON.stringify(data.user));
+              showMainApp(data.user);
+            } else {
+              loginErrorText.textContent = data.message;
+              loginError.classList.remove("hidden");
+            }
+          } catch (error) {
+            loginErrorText.textContent =
+              "Netzwerkfehler. Bitte versuche es später erneut.";
+            loginError.classList.remove("hidden");
+          }
+        });
+      }
+
+      // Registrierungs-Formular
+      if (registerFormElement) {
+        registerFormElement.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const username = document.getElementById("registerUsername").value;
+          const email = document.getElementById("registerEmail").value;
+          const password = document.getElementById("registerPassword").value;
+          const confirmPassword = document.getElementById(
+            "registerConfirmPassword"
+          ).value;
+
+          if (password !== confirmPassword) {
+            registerErrorText.textContent = "Passwörter stimmen nicht überein";
+            registerError.classList.remove("hidden");
+            return;
+          }
+
+          try {
+            const response = await fetch(`${API_BASE_URL}/api/register`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ username, email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              localStorage.setItem("token", data.token);
+              localStorage.setItem("user", JSON.stringify(data.user));
+              showMainApp(data.user);
+            } else {
+              registerErrorText.textContent = data.message;
+              registerError.classList.remove("hidden");
+            }
+          } catch (error) {
+            registerErrorText.textContent =
+              "Netzwerkfehler. Bitte versuche es später ernten.";
+            registerError.classList.remove("hidden");
+          }
+        });
+      }
+
+      // Logout-Button
+      if (logoutButton) {
+        logoutButton.addEventListener("click", logout);
+      }
+
+      // Initialisierung
       document.addEventListener("DOMContentLoaded", function () {
+        const isLoggedIn = checkLoginStatus();
+        if (!isLoggedIn) {
+          testServerConnection();
+        }
         lucide.createIcons();
       });
     </script>
