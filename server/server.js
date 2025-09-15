@@ -28,15 +28,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Statische Dateien ausliefern
-app.use(
-  express.static(".", {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith(".css")) {
-        res.setHeader("Content-Type", "text/css");
-      }
-    },
-  })
-);
+app.use(express.static(path.join(__dirname, "../client")));
 
 // Logging Middleware
 app.use((req, res, next) => {
@@ -325,7 +317,7 @@ app.post(
 
 // Alle Routen zur index.html leiten (für Client-Side Routing)
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(__dirname, "../client/index.html"));
 });
 
 // Port aus Environment Variable oder Default
