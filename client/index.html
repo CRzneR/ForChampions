@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Turnier Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="assets/css/style.css" />
     <script src="https://unpkg.com/lucide@latest"></script>
     <link
       rel="stylesheet"
@@ -21,6 +20,7 @@
     </style>
   </head>
   <body class="bg-[#14181D]">
+    <div id="alert-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
     <!-- Login Container (initial sichtbar) -->
     <div
       id="loginContainer"
@@ -447,12 +447,7 @@
     </div>
 
     <!-- JavaScript Dateien -->
-    <script src="client/js/app.js"></script>
-    <script src="client/js/create.js"></script>
-    <script src="client/js/groups.js"></script>
-    <script src="client/js/schedule.js"></script>
-    <script src="client/js/playoffs.js"></script>
-    <script src="client/js/dashboard.js"></script>
+    <script type="module" src="./js/app.js"></script>
 
     <!-- Login/Logout Script -->
     <script>

@@ -6,14 +6,14 @@ const cors = require("cors");
 const path = require("path");
 require("dotenv").config();
 
-// ✅ Models aus dem Backend laden
+// ✅ Models
 const { User } = require("./models/User");
 const { Tournament } = require("./models/Tournament");
-const { Match } = require("./models/Match");
+const { Team } = require("./models/Team");
 
 const app = express();
 
-// CORS Konfiguration
+// --- Middleware ---
 app.use(
   cors({
     origin:
@@ -28,37 +28,41 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Statische Dateien ausliefern
-app.use(express.static(path.join(__dirname, "../client")));
+app.use(
+  express.static(path.join(__dirname, "../client"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+    },
+  })
+);
 
-// Logging Middleware
+// Logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
 
-// MongoDB Verbindung
+// --- DB Verbindung ---
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/forcham";
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ MongoDB verbunden");
-  } catch (error) {
-    console.error("❌ MongoDB Verbindungsfehler:", error.message);
-  }
-};
+mongoose
+  .connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB verbunden"))
+  .catch((err) => console.error("❌ MongoDB Fehler:", err.message));
 
-connectDB();
-
-// Middleware zur Authentifizierung
+// --- Auth Middleware ---
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-
   if (!token) {
     return res
       .status(401)
@@ -79,19 +83,7 @@ const authenticateToken = (req, res, next) => {
 
 // --- ROUTES ---
 
-// Test-Route
-app.get("/api/test", (req, res) => {
-  res.json({
-    message: "Server ist erreichbar!",
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    database:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    environment: process.env.NODE_ENV || "development",
-  });
-});
-
-// Health Check Route für Render
+// Health Check
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -102,11 +94,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Registrierungs-Endpoint
+// Registrierung
 app.post("/api/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
-
     if (!username || !email || !password) {
       return res.status(400).json({ message: "Alle Felder sind erforderlich" });
     }
@@ -137,11 +128,10 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// Login-Endpoint
+// Login
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-
     if (!email || !password) {
       return res
         .status(400)
@@ -175,17 +165,24 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Tournament Endpoints
+// --- Tournament Endpoints ---
+
 // Turnier erstellen
 app.post("/api/tournaments", authenticateToken, async (req, res) => {
   try {
     const { name, description, teams, groupCount } = req.body;
 
+    // 1. Teams in DB speichern
+    const createdTeams = await Team.insertMany(
+      teams.map((t) => ({ name: t.name }))
+    );
+
+    // 2. Turnier mit Team-IDs anlegen
     const tournament = new Tournament({
       name,
       description,
       createdBy: req.user.userId,
-      teams: teams || [],
+      teams: createdTeams.map((t) => t._id),
       groups: Array.from({ length: groupCount || 4 }, (_, i) => ({
         name: `Gruppe ${String.fromCharCode(65 + i)}`,
         teams: [],
@@ -194,20 +191,25 @@ app.post("/api/tournaments", authenticateToken, async (req, res) => {
     });
 
     await tournament.save();
-    res.status(201).json(tournament);
+
+    // 3. Mit Teams zurückgeben
+    const populated = await Tournament.findById(tournament._id).populate(
+      "teams"
+    );
+
+    res.status(201).json(populated);
   } catch (error) {
     console.error("Turnier Erstellungsfehler:", error);
     res.status(500).json({ message: "Fehler beim Erstellen des Turniers" });
   }
 });
 
-// Alle Turniere eines Users abrufen
+// Alle Turniere eines Users
 app.get("/api/tournaments", authenticateToken, async (req, res) => {
   try {
     const tournaments = await Tournament.find({ createdBy: req.user.userId })
       .populate("teams")
       .sort({ createdAt: -1 });
-
     res.json(tournaments);
   } catch (error) {
     console.error("Turnier Abfragefehler:", error);
@@ -215,21 +217,15 @@ app.get("/api/tournaments", authenticateToken, async (req, res) => {
   }
 });
 
-// Bestimmtes Turnier abrufen
+// Bestimmtes Turnier
 app.get("/api/tournaments/:id", authenticateToken, async (req, res) => {
   try {
-    const tournament = await Tournament.findById(req.params.id)
-      .populate("teams")
-      .populate("groups.matches.team1")
-      .populate("groups.matches.team2")
-      .populate("playoffs.rounds.matches.team1")
-      .populate("playoffs.rounds.matches.team2")
-      .populate("playoffs.rounds.matches.winner");
-
+    const tournament = await Tournament.findById(req.params.id).populate(
+      "teams"
+    );
     if (!tournament) {
       return res.status(404).json({ message: "Turnier nicht gefunden" });
     }
-
     res.json(tournament);
   } catch (error) {
     console.error("Turnier Abfragefehler:", error);
@@ -237,95 +233,35 @@ app.get("/api/tournaments/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// Turnier aktualisieren
-app.put("/api/tournaments/:id", authenticateToken, async (req, res) => {
-  try {
-    const tournament = await Tournament.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).populate("teams");
-
-    if (!tournament) {
-      return res.status(404).json({ message: "Turnier nicht gefunden" });
-    }
-
-    res.json(tournament);
-  } catch (error) {
-    console.error("Turnier Aktualisierungsfehler:", error);
-    res.status(500).json({ message: "Fehler beim Aktualisieren des Turniers" });
-  }
-});
-
-// Match-Ergebnis speichern
-app.post(
-  "/api/tournaments/:id/matches",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { groupIndex, matchIndex, score1, score2 } = req.body;
-
-      const tournament = await Tournament.findById(req.params.id);
-      if (!tournament) {
-        return res.status(404).json({ message: "Turnier nicht gefunden" });
+// Statische Dateien zuerst
+app.use(
+  express.static(path.join(__dirname, "../client"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
       }
-
-      tournament.groups[groupIndex].matches[matchIndex].score1 = score1;
-      tournament.groups[groupIndex].matches[matchIndex].score2 = score2;
-      tournament.groups[groupIndex].matches[matchIndex].played = true;
-
-      await tournament.save();
-      res.json(tournament);
-    } catch (error) {
-      console.error("Match Speicherfehler:", error);
-      res.status(500).json({ message: "Fehler beim Speichern des Matches" });
-    }
-  }
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+    },
+  })
 );
 
-// Playoff-Match-Ergebnis speichern
-app.post(
-  "/api/tournaments/:id/playoffs",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { roundIndex, matchIndex, score1, score2, winnerId } = req.body;
-
-      const tournament = await Tournament.findById(req.params.id);
-      if (!tournament) {
-        return res.status(404).json({ message: "Turnier nicht gefunden" });
-      }
-
-      tournament.playoffs.rounds[roundIndex].matches[matchIndex].score1 =
-        score1;
-      tournament.playoffs.rounds[roundIndex].matches[matchIndex].score2 =
-        score2;
-      tournament.playoffs.rounds[roundIndex].matches[matchIndex].winner =
-        winnerId;
-      tournament.playoffs.rounds[roundIndex].matches[matchIndex].played = true;
-
-      await tournament.save();
-      res.json(tournament);
-    } catch (error) {
-      console.error("Playoff Match Speicherfehler:", error);
-      res
-        .status(500)
-        .json({ message: "Fehler beim Speichern des Playoff-Matches" });
-    }
+// SPA Fallback nur für HTML-Routen
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    return next(); // API-Routen nicht überschreiben
   }
-);
-
-// Alle Routen zur index.html leiten (für Client-Side Routing)
-app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../client/index.html"));
 });
 
-// Port aus Environment Variable oder Default
-const PORT = process.env.PORT || 3000;
+// Test-Route für Frontend
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API läuft ✅" });
+});
 
-// Server starten
+// --- Server Start ---
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server läuft auf Port ${PORT}`);
-  console.log(`📋 Environment: ${process.env.NODE_ENV || "development"}`);
-  console.log(`🌐 URL: http://localhost:${PORT}`);
 });

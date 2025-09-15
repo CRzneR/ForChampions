@@ -1,3 +1,5 @@
+import { updateDashboard } from "./dashboard.js";
+
 let currentTournament = null;
 let currentUser = null;
 

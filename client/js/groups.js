@@ -1,190 +1,159 @@
-// groups.js
+// --- Globale Daten absichern ---
+if (!window.tournamentData) {
+  window.tournamentData = {
+    name: "",
+    teams: [],
+    groups: [],
+    matches: [],
+    playoffSpots: 0,
+    teamNames: [],
+  };
+} else {
+  window.tournamentData.groups ||= [];
+  window.tournamentData.matches ||= [];
+  window.tournamentData.teams ||= [];
+}
 
-// --- Daten-Logik ---
-export function initializeTournamentData(tournamentData) {
-  tournamentData.groups = [];
-  tournamentData.matches = [];
+// --- Initialisierung der Turnierdaten ---
+export function initializeTournamentData() {
+  // Reset
+  window.tournamentData.groups = [];
+  window.tournamentData.matches = [];
+  window.tournamentData.teams = [];
 
-  const teamsPerGroup = Math.floor(
-    tournamentData.teamCount / tournamentData.groupCount
-  );
-  const remainingTeams = tournamentData.teamCount % tournamentData.groupCount;
+  const { teamNames = [], groupCount: rawGroupCount } = window.tournamentData;
+  const groupCount = Math.max(1, rawGroupCount || 1);
 
-  let nameIndex = 0;
+  // Teams mischen
+  const shuffled = [...teamNames].sort(() => Math.random() - 0.5);
 
-  for (let i = 0; i < tournamentData.groupCount; i++) {
-    const groupTeams = i < remainingTeams ? teamsPerGroup + 1 : teamsPerGroup;
-    const group = {
+  // Teams mit IDs bauen
+  window.tournamentData.teams = shuffled.map((name, idx) => ({
+    id: `team-${idx}`,
+    name,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    goalsFor: 0,
+    goalsAgainst: 0,
+    points: 0,
+    form: [],
+    matchesPlayed: 0,
+    games: 0,
+  }));
+
+  // Gruppen anlegen
+  for (let i = 0; i < groupCount; i++) {
+    window.tournamentData.groups.push({
       name: `Gruppe ${String.fromCharCode(65 + i)}`,
       teams: [],
-    };
-
-    for (let j = 0; j < groupTeams; j++) {
-      group.teams.push({
-        id: `team-${i}-${j}`,
-        name: tournamentData.teamNames?.[nameIndex] || `Team ${nameIndex + 1}`,
-        wins: 0,
-        losses: 0,
-        draws: 0,
-        goalsFor: 0,
-        goalsAgainst: 0,
-        points: 0,
-        form: [],
-      });
-      nameIndex++;
-    }
-
-    tournamentData.groups.push(group);
-  }
-}
-
-// --- UI-Initialisierung ---
-export function initGroupsModule(tournamentData) {
-  const groupsContent = document.getElementById("groups-content");
-  groupsContent.innerHTML = `
-    <div class="bg-primary rounded-lg shadow-lg border border-gray-800">
-      <div class="px-6 py-4 border-b border-gray-800">
-        <h2 class="text-2xl font-bold text-white">Gruppen</h2>
-        <p id="groups-info" class="text-sm text-gray-400 mt-1">
-          ${tournamentData.name ? tournamentData.name + " - " : ""}
-          Erstellen Sie ein Turnier, um die Gruppen anzuzeigen
-        </p>
-      </div>
-      <div id="groups-container" class="p-4"></div>
-    </div>
-  `;
-}
-
-// --- UI-Rendering ---
-export function generateGroups(tournamentData) {
-  const groupsContainer = document.getElementById("groups-container");
-  const infoElement = document.getElementById("groups-info");
-
-  if (!tournamentData.name) {
-    groupsContainer.innerHTML = `<p class="text-gray-400 text-center py-8">Bitte erstellen Sie zuerst ein Turnier</p>`;
-    return;
+      matches: [],
+    });
   }
 
-  infoElement.textContent = `${tournamentData.name} - ${tournamentData.groupCount} Gruppen`;
-  groupsContainer.innerHTML = "";
-
-  tournamentData.groups.forEach((group, groupIndex) => {
-    // Sortierung nach Punkten, dann Tordifferenz
-    group.teams.sort(
-      (a, b) =>
-        b.points - a.points ||
-        b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst)
-    );
-
-    const groupDiv = document.createElement("div");
-    groupDiv.className =
-      "mb-8 bg-primary-light rounded-lg overflow-hidden border border-gray-800";
-
-    groupDiv.innerHTML = `
-      <div class="px-6 py-3 bg-primary border-b border-gray-800">
-        <h3 class="text-lg font-bold text-white flex items-center justify-between">
-          <span>${group.name}</span>
-          ${
-            tournamentData.playoffSpots > 0
-              ? `<span class="text-sm font-normal text-gray-400">
-                  Top ${tournamentData.playoffSpots} qualifizieren sich
-                 </span>`
-              : ""
-          }
-        </h3>
-      </div>
-      <div class="overflow-x-auto">
-        ${renderGroupTable(group, tournamentData.playoffSpots)}
-      </div>
-    `;
-
-    groupsContainer.appendChild(groupDiv);
+  // Teams gleichmäßig verteilen
+  window.tournamentData.teams.forEach((team, idx) => {
+    const g = idx % groupCount;
+    window.tournamentData.groups[g].teams.push(team);
   });
 }
 
-// --- Hilfsfunktion ---
-function renderGroupTable(group, playoffSpots) {
-  return `
-    <table class="min-w-full divide-y divide-gray-800">
-      <thead class="bg-primary">
-        <tr>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Spiele</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Team</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">S</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">N</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">U</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Tore</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">+/-</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Pkt.</th>
-          <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Form</th>
-        </tr>
-      </thead>
-      <tbody class="bg-primary-light divide-y divide-gray-800">
-        ${group.teams
-          .map((team, idx) => renderTeamRow(team, idx, playoffSpots))
-          .join("")}
-      </tbody>
-    </table>
-  `;
+// --- Gruppen rendern ---
+export function generateGroups() {
+  const root = document.getElementById("groups-content");
+  if (!root) return;
+
+  if (
+    !window.tournamentData.name ||
+    window.tournamentData.groups.length === 0
+  ) {
+    root.innerHTML = `
+      <div class="text-center py-8 text-gray-400">
+        Kein aktives Turnier oder keine Gruppen vorhanden
+      </div>
+    `;
+    return;
+  }
+
+  root.innerHTML = "";
+  window.tournamentData.groups.forEach((group) => {
+    const sorted = [...group.teams].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const diffA = a.goalsFor - a.goalsAgainst;
+      const diffB = b.goalsFor - b.goalsAgainst;
+      return diffB - diffA;
+    });
+
+    const el = document.createElement("div");
+    el.className =
+      "mb-8 bg-primary-light rounded-lg overflow-hidden border border-gray-800";
+    el.innerHTML = `
+      <div class="px-6 py-3 bg-primary border-b border-gray-800">
+        <h3 class="text-lg font-bold text-white">${group.name}</h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-800">
+          <thead class="bg-primary">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs text-gray-300">Team</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">S</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">U</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">N</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">Tore</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">Pkt.</th>
+              <th class="px-4 py-2 text-center text-xs text-gray-300">Form</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            ${sorted
+              .map(
+                (t) => `
+              <tr class="hover:bg-primary transition-colors">
+                <td class="px-4 py-2 text-sm font-medium text-white">${
+                  t.name
+                }</td>
+                <td class="px-4 py-2 text-sm text-center text-green-400">${
+                  t.wins
+                }</td>
+                <td class="px-4 py-2 text-sm text-center text-yellow-400">${
+                  t.draws
+                }</td>
+                <td class="px-4 py-2 text-sm text-center text-red-400">${
+                  t.losses
+                }</td>
+                <td class="px-4 py-2 text-sm text-center text-gray-300">${
+                  t.goalsFor
+                }:${t.goalsAgainst}</td>
+                <td class="px-4 py-2 text-sm font-bold text-center text-white">${
+                  t.points
+                }</td>
+                <td class="px-4 py-2 text-sm text-center">
+                  <div class="flex space-x-1 justify-center">
+                    ${t.form
+                      .map((res) => {
+                        const colors = {
+                          W: "bg-green-600 text-white",
+                          D: "bg-yellow-500 text-gray-900",
+                          L: "bg-red-600 text-white",
+                        };
+                        return `<span class="w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
+                          colors[res] || "bg-gray-600"
+                        }">${res}</span>`;
+                      })
+                      .join("")}
+                  </div>
+                </td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+    root.appendChild(el);
+  });
 }
 
-function renderTeamRow(team, index, playoffSpots) {
-  const isPlayoffSpot = index < playoffSpots;
-  const gamesPlayed = (team.wins || 0) + (team.losses || 0) + (team.draws || 0);
-  const goalDifference = (team.goalsFor || 0) - (team.goalsAgainst || 0);
-
-  return `
-    <tr class="${
-      isPlayoffSpot ? "bg-green-900 bg-opacity-30" : ""
-    } hover:bg-primary transition-colors">
-      <td class="px-4 py-3 text-sm text-center font-medium ${
-        isPlayoffSpot ? "text-green-400" : "text-gray-300"
-      }">${gamesPlayed}</td>
-      <td class="px-4 py-3 text-sm font-medium text-white">${team.name}</td>
-      <td class="px-4 py-3 text-sm text-center text-gray-300">${
-        team.wins || 0
-      }</td>
-      <td class="px-4 py-3 text-sm text-center text-gray-300">${
-        team.losses || 0
-      }</td>
-      <td class="px-4 py-3 text-sm text-center text-gray-300">${
-        team.draws || 0
-      }</td>
-      <td class="px-4 py-3 text-sm text-center text-gray-300">${
-        team.goalsFor || 0
-      }:${team.goalsAgainst || 0}</td>
-      <td class="px-4 py-3 text-sm text-center font-medium ${
-        goalDifference > 0
-          ? "text-green-400"
-          : goalDifference < 0
-          ? "text-red-400"
-          : "text-gray-300"
-      }">${goalDifference > 0 ? "+" : ""}${goalDifference}</td>
-      <td class="px-4 py-3 text-sm text-center font-bold text-white">${
-        team.points || 0
-      }</td>
-      <td class="px-4 py-3">
-        <div class="flex justify-center space-x-1">
-          ${renderTeamForm(team.form)}
-        </div>
-      </td>
-    </tr>
-  `;
-}
-
-function renderTeamForm(form = []) {
-  if (!form.length) return '<span class="text-gray-500 text-xs">-</span>';
-  const colorClasses = {
-    W: "bg-green-600 text-white",
-    L: "bg-red-600 text-white",
-    D: "bg-yellow-500 text-gray-900",
-  };
-  return form
-    .map(
-      (r) =>
-        `<span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
-          colorClasses[r] || "bg-gray-700"
-        }">${r}</span>`
-    )
-    .join("");
-}
+// optional global
+window.generateGroups = generateGroups;

@@ -1,56 +1,71 @@
-// schedule.js - Spielplan-Verwaltung für Turnier Manager (nur Hinrunde)
+// client/js/schedule.js
 
-function initScheduleModule() {
-  const scheduleContent = document.getElementById("schedule-content");
-  scheduleContent.innerHTML = `
-      <div class="bg-primary rounded-lg shadow-lg border border-gray-800">
-          <div class="px-6 py-4 border-b border-gray-800">
-              <h2 class="text-2xl font-bold text-white">Spielplan</h2>
-              <p id="schedule-info" class="text-sm text-gray-400 mt-1">
-                  ${tournamentData.name ? tournamentData.name + " - " : ""}
-                  Erstellen Sie ein Turnier, um den Spielplan anzuzeigen
-              </p>
-          </div>
-          <div id="schedule-container" class="p-4"></div>
+import { generateGroups } from "./groups.js";
+import { updateDashboard } from "./dashboard.js";
+import { showAlert } from "./ui-alert.js";
+
+/**
+ * Rendert die Spielplan-Ansicht mit Eingabefeldern für Ergebnisse.
+ * Kann beliebig oft aufgerufen werden (z.B. nach Änderungen).
+ */
+export function generateSchedule() {
+  const wrap = document.getElementById("schedule-content");
+  if (!wrap) return;
+
+  wrap.innerHTML = `
+    <div class="bg-primary rounded-lg shadow-lg border border-gray-800">
+      <div class="px-6 py-4 border-b border-gray-800">
+        <h2 class="text-2xl font-bold text-white">Spielplan</h2>
+        <p id="schedule-info" class="text-sm text-gray-400 mt-1">
+          ${window.tournamentData?.name || "Kein Turnier"}
+        </p>
       </div>
+      <div id="schedule-container" class="p-4"></div>
+    </div>
   `;
-}
 
-function generateSchedule() {
-  const scheduleContainer = document.getElementById("schedule-container");
-  const infoElement = document.getElementById("schedule-info");
+  const container = document.getElementById("schedule-container");
 
-  if (!tournamentData.name) {
-    scheduleContainer.innerHTML = `
-          <p class="text-gray-400 text-center py-8">
-              Bitte erstellen Sie zuerst ein Turnier
-          </p>
-      `;
+  // Grundvalidierung
+  if (
+    !window.tournamentData ||
+    !window.tournamentData.name ||
+    !Array.isArray(window.tournamentData.groups) ||
+    window.tournamentData.groups.length === 0
+  ) {
+    container.innerHTML = `
+      <p class="text-gray-400 text-center py-8">
+        Bitte zuerst ein Turnier erstellen
+      </p>
+    `;
     return;
   }
 
-  infoElement.textContent = `${tournamentData.name} - Spielplan`;
-  scheduleContainer.innerHTML = "";
+  container.innerHTML = "";
 
-  tournamentData.groups.forEach((group, groupIndex) => {
+  window.tournamentData.groups.forEach((group, gIdx) => {
+    // Abbruch, wenn keine Teams
+    if (!Array.isArray(group.teams) || group.teams.length === 0) return;
+
     const groupDiv = document.createElement("div");
     groupDiv.className =
       "mb-8 bg-primary-light rounded-lg overflow-hidden border border-gray-800";
 
-    const matchdays = generateMatchdays(group.teams);
-
     groupDiv.innerHTML = `
       <div class="px-6 py-3 bg-primary border-b border-gray-800">
-          <h3 class="text-lg font-bold text-white">${group.name}</h3>
+        <h3 class="text-lg font-bold text-white">${group.name}</h3>
       </div>
     `;
 
-    matchdays.forEach((matchday, dayIndex) => {
-      const matchdayDiv = document.createElement("div");
-      matchdayDiv.className = "mb-6";
-      matchdayDiv.innerHTML = `
+    // Matchdays erzeugen
+    const matchdays = generateMatchdays(group.teams);
+
+    matchdays.forEach((day, dIdx) => {
+      const dayDiv = document.createElement("div");
+      dayDiv.className = "mb-6";
+      dayDiv.innerHTML = `
         <div class="px-4 py-2 bg-gray-800 border-b border-gray-700">
-          <h4 class="font-medium text-white">Spieltag ${dayIndex + 1}</h4>
+          <h4 class="font-medium text-white">Spieltag ${dIdx + 1}</h4>
         </div>
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-800">
@@ -62,24 +77,22 @@ function generateSchedule() {
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase">Aktion</th>
               </tr>
             </thead>
-            <tbody class="bg-primary-light divide-y divide-gray-800" id="group-${groupIndex}-matchday-${dayIndex}"></tbody>
+            <tbody class="bg-primary-light divide-y divide-gray-800"></tbody>
           </table>
         </div>
       `;
 
-      const tbody = matchdayDiv.querySelector(
-        `#group-${groupIndex}-matchday-${dayIndex}`
-      );
+      const tbody = dayDiv.querySelector("tbody");
 
-      matchday.forEach((match, matchIndex) => {
-        const team1Index = group.teams.findIndex((t) => t.id === match.home.id);
-        const team2Index = group.teams.findIndex((t) => t.id === match.away.id);
+      day.forEach((match, mIdx) => {
+        // Fallback-IDs erzeugen, falls Teamobjekte noch keine id besitzen
+        const homeId = match.home.id || `${group.name}-home-${mIdx}`;
+        const awayId = match.away.id || `${group.name}-away-${mIdx}`;
 
-        const matchId = `group-${groupIndex}-matchday-${dayIndex}-match-${matchIndex}`;
-        const existingMatch = tournamentData.matches.find(
-          (m) => m.id === matchId
+        const rowId = `g${gIdx}-d${dIdx}-m${mIdx}`;
+        const existing = (window.tournamentData.matches || []).find(
+          (m) => m.id === rowId
         );
-        const isSaved = !!existingMatch;
 
         tbody.innerHTML += `
           <tr class="hover:bg-primary transition-colors">
@@ -91,192 +104,198 @@ function generateSchedule() {
             }</td>
             <td class="px-4 py-3">
               <div class="flex items-center space-x-2">
-                <input type="number" id="${matchId}-home"
-                  class="w-16 text-center bg-gray-800 border border-gray-700 rounded-md px-2 py-1 ${
-                    isSaved ? "bg-gray-700 text-gray-400" : "text-white"
-                  }"
-                  min="0" value="${
-                    existingMatch ? existingMatch.homeGoals : ""
-                  }" ${isSaved ? "readonly" : ""}>
+                <input 
+                  type="number" 
+                  id="${rowId}-home"
+                  class="w-16 text-center bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white"
+                  min="0" 
+                  value="${existing ? existing.homeGoals : ""}">
                 <span class="text-gray-300">:</span>
-                <input type="number" id="${matchId}-away"
-                  class="w-16 text-center bg-gray-800 border border-gray-700 rounded-md px-2 py-1 ${
-                    isSaved ? "bg-gray-700 text-gray-400" : "text-white"
-                  }"
-                  min="0" value="${
-                    existingMatch ? existingMatch.awayGoals : ""
-                  }" ${isSaved ? "readonly" : ""}>
+                <input 
+                  type="number" 
+                  id="${rowId}-away"
+                  class="w-16 text-center bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-white"
+                  min="0" 
+                  value="${existing ? existing.awayGoals : ""}">
               </div>
             </td>
             <td class="px-4 py-3">
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center gap-2">
                 <button
-                  onclick="saveMatchResult('${groupIndex}', ${team1Index}, ${team2Index}, ${dayIndex}, ${matchIndex})"
-                  class="px-3 py-1 bg-accent hover:bg-accent-hover text-white rounded-md ${
-                    isSaved ? "opacity-50 cursor-not-allowed" : ""
-                  }"
-                  ${isSaved ? "disabled" : ""}>
+                  onclick="saveMatchResult('${rowId}', ${gIdx}, '${homeId}', '${awayId}')"
+                  class="px-3 py-1 bg-accent hover:bg-accent-hover text-white rounded-md"
+                >
                   Speichern
                 </button>
-                ${
-                  isSaved
-                    ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                       </svg>`
-                    : ""
-                }
               </div>
             </td>
           </tr>
         `;
       });
 
-      groupDiv.appendChild(matchdayDiv);
+      groupDiv.appendChild(dayDiv);
     });
 
-    scheduleContainer.appendChild(groupDiv);
+    container.appendChild(groupDiv);
   });
 }
 
-function generateMatchdays(teams) {
-  const matchdays = [];
-  const teamList = [...teams];
-  const hasBye = teamList.length % 2 !== 0;
+/**
+ * Erstellt die Spieltage (Round-Robin, nur Hinrunde).
+ * Erwartet eine Teamliste mit mindestens name (id optional).
+ */
+export function generateMatchdays(teams) {
+  const list = (teams || []).map((t, idx) => ({
+    id: t.id ?? `t-${idx}`,
+    name: t.name ?? `Team ${idx + 1}`,
+  }));
 
-  if (hasBye) {
-    teamList.push({ id: "bye", name: "SPIELFREI" });
-  }
+  if (list.length < 2) return [];
 
-  const n = teamList.length;
+  // Bye, wenn ungerade Anzahl
+  if (list.length % 2 !== 0) list.push({ id: "bye", name: "SPIELFREI" });
+
+  const n = list.length;
   const rounds = n - 1;
   const half = n / 2;
 
-  // Fixes Team ist das erste Team
-  const fixedTeam = teamList[0];
-  // Rotierende Teams (alle außer dem ersten)
-  const rotatingTeams = teamList.slice(1);
+  const fixed = list[0];
+  const rotating = list.slice(1);
 
-  for (let round = 0; round < rounds; round++) {
-    const currentMatchday = [];
+  const days = [];
 
-    // Paarung mit fixem Team (immer erste Paarung)
-    const opponent = rotatingTeams[round % rotatingTeams.length];
-    if (fixedTeam.id !== "bye" && opponent.id !== "bye") {
-      // Abwechselnd Heim- und Auswärtsspiel
-      if (round % 2 === 0) {
-        currentMatchday.push({ home: fixedTeam, away: opponent });
-      } else {
-        currentMatchday.push({ home: opponent, away: fixedTeam });
-      }
+  for (let r = 0; r < rounds; r++) {
+    const matches = [];
+
+    // Fixes Team vs. Gegner
+    const opp = rotating[r % rotating.length];
+    if (fixed.id !== "bye" && opp.id !== "bye") {
+      matches.push(
+        r % 2 === 0 ? { home: fixed, away: opp } : { home: opp, away: fixed }
+      );
     }
 
     // Restliche Paarungen
     for (let i = 1; i < half; i++) {
-      const homeIndex = (round + i) % rotatingTeams.length;
-      const awayIndex =
-        (round + rotatingTeams.length - i) % rotatingTeams.length;
-
-      const homeTeam = rotatingTeams[homeIndex];
-      const awayTeam = rotatingTeams[awayIndex];
-
-      if (homeTeam.id !== "bye" && awayTeam.id !== "bye") {
-        // Abwechselnd Heim- und Auswärtsspiele
-        if (i % 2 === 0) {
-          currentMatchday.push({ home: homeTeam, away: awayTeam });
-        } else {
-          currentMatchday.push({ home: awayTeam, away: homeTeam });
-        }
+      const hi = (r + i) % rotating.length;
+      const ai = (r + rotating.length - i) % rotating.length;
+      const H = rotating[hi];
+      const A = rotating[ai];
+      if (H.id !== "bye" && A.id !== "bye") {
+        matches.push(i % 2 === 0 ? { home: H, away: A } : { home: A, away: H });
       }
     }
 
-    matchdays.push(currentMatchday);
+    days.push(matches);
   }
 
-  return matchdays;
+  return days;
 }
 
-// Ergebnisse speichern (und Tabelle sauber neu berechnen)
-window.saveMatchResult = function (
-  groupIndex,
-  team1Index,
-  team2Index,
-  matchdayIndex,
-  matchIndex
-) {
-  const matchId = `group-${groupIndex}-matchday-${matchdayIndex}-match-${matchIndex}`;
-  const homeGoalsInput = document.getElementById(`${matchId}-home`);
-  const awayGoalsInput = document.getElementById(`${matchId}-away`);
+/**
+ * Speichert / überschreibt ein Ergebnis.
+ * Eingabefelder bleiben bearbeitbar – Ergebnis ist jederzeit änderbar.
+ */
+window.saveMatchResult = function (rowId, groupIndex, homeId, awayId) {
+  const homeInput = document.getElementById(`${rowId}-home`);
+  const awayInput = document.getElementById(`${rowId}-away`);
 
-  const homeGoals = parseInt(homeGoalsInput.value);
-  const awayGoals = parseInt(awayGoalsInput.value);
+  const homeGoals = parseInt(homeInput?.value ?? "", 10);
+  const awayGoals = parseInt(awayInput?.value ?? "", 10);
 
   if (isNaN(homeGoals) || isNaN(awayGoals)) {
-    alert("Bitte gültige Ergebnisse eingeben!");
+    showAlert?.("Bitte gültige Zahlen eingeben!", "error");
     return;
   }
+  if (!window.tournamentData) return;
 
-  if (homeGoals < 0 || awayGoals < 0) {
-    alert("Torzahlen dürfen nicht negativ sein!");
-    return;
+  if (!Array.isArray(window.tournamentData.matches)) {
+    window.tournamentData.matches = [];
   }
 
-  const existingMatchIndex = tournamentData.matches.findIndex(
-    (m) => m.id === matchId
-  );
-  const matchData = {
-    id: matchId,
+  const idx = window.tournamentData.matches.findIndex((m) => m.id === rowId);
+  const payload = {
+    id: rowId,
     groupIndex,
-    team1Index, // home
-    team2Index, // away
-    matchdayIndex,
+    homeId,
+    awayId,
     homeGoals,
     awayGoals,
     date: new Date().toISOString(),
   };
 
-  if (existingMatchIndex >= 0) {
-    const prev = tournamentData.matches[existingMatchIndex];
-    // Wenn unverändert, nichts tun
-    if (prev.homeGoals === homeGoals && prev.awayGoals === awayGoals) {
-      showAlert("Ergebnis ist unverändert.", "info");
-      return;
-    }
-    tournamentData.matches[existingMatchIndex] = matchData;
+  if (idx >= 0) {
+    window.tournamentData.matches[idx] = payload;
   } else {
-    tournamentData.matches.push(matchData);
+    window.tournamentData.matches.push(payload);
   }
 
-  // Tabelle aus ALLEN Spielen der Gruppe neu berechnen (verhindert Doppelzählungen)
-  recomputeGroupTable(groupIndex);
+  // Gruppen neu berechnen + Dashboard aktualisieren (falls Module geladen)
+  try {
+    generateGroups?.();
+    updateDashboard?.();
+  } catch (_) {
+    // stillschweigend ignorieren – UI wird wenigstens im Spielplan aktualisiert
+  }
 
-  // UI Sperren für diese Zeile
-  homeGoalsInput.readOnly = true;
-  awayGoalsInput.readOnly = true;
-  homeGoalsInput.classList.add("bg-gray-700", "text-gray-400");
-  awayGoalsInput.classList.add("bg-gray-700", "text-gray-400");
-  const buttonCell = homeGoalsInput
-    .closest("tr")
-    .querySelector("td:last-child");
-  buttonCell.innerHTML = `
-    <div class="flex items-center space-x-2">
-      <button class="px-3 py-1 bg-gray-500 text-gray-300 rounded-md cursor-not-allowed" disabled>Speichern</button>
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-      </svg>
-    </div>
-  `;
-
-  // Gruppenansicht neu rendern
-  generateGroups();
-  showAlert("Ergebnis erfolgreich gespeichert!", "success");
+  showAlert?.("Ergebnis gespeichert!", "success");
 };
 
-// Alle Team-Stats der Gruppe aus den gespeicherten Matches neu berechnen
+window.saveMatchResult = function (rowId, groupIndex, homeId, awayId) {
+  const homeInput = document.getElementById(`${rowId}-home`);
+  const awayInput = document.getElementById(`${rowId}-away`);
+
+  const homeGoals = parseInt(homeInput?.value ?? "", 10);
+  const awayGoals = parseInt(awayInput?.value ?? "", 10);
+
+  if (isNaN(homeGoals) || isNaN(awayGoals)) {
+    showAlert?.("Bitte gültige Zahlen eingeben!", "error");
+    return;
+  }
+
+  if (!window.tournamentData) return;
+  if (!Array.isArray(window.tournamentData.matches)) {
+    window.tournamentData.matches = [];
+  }
+
+  const idx = window.tournamentData.matches.findIndex((m) => m.id === rowId);
+  const payload = {
+    id: rowId,
+    groupIndex,
+    homeId,
+    awayId,
+    homeGoals,
+    awayGoals,
+    date: new Date().toISOString(),
+  };
+
+  if (idx >= 0) {
+    window.tournamentData.matches[idx] = payload;
+  } else {
+    window.tournamentData.matches.push(payload);
+  }
+
+  // NEU: Gruppe neu berechnen
+  recomputeGroupTable(groupIndex);
+
+  // Gruppen + Dashboard aktualisieren
+  try {
+    generateGroups?.();
+    updateDashboard?.();
+  } catch (_) {}
+
+  showAlert?.("Ergebnis gespeichert!", "success");
+};
+
+/**
+ * Berechnet für eine Gruppe alle Team-Statistiken neu
+ * anhand der gespeicherten Matches.
+ */
 function recomputeGroupTable(groupIndex) {
-  const group = tournamentData.groups[groupIndex];
+  const group = window.tournamentData.groups[groupIndex];
   if (!group) return;
 
-  // Reset aller Statistiken
+  // Reset
   group.teams.forEach((team) => {
     team.wins = 0;
     team.losses = 0;
@@ -286,35 +305,26 @@ function recomputeGroupTable(groupIndex) {
     team.goalsAgainst = 0;
     team.goalDifference = 0;
     team.matchesPlayed = 0;
-    team.games = 0;
     team.form = [];
   });
 
-  // Alle Spiele der Gruppe chronologisch sortieren
-  const groupMatches = tournamentData.matches
-    .filter((match) => match.groupIndex === groupIndex)
+  // Alle Spiele dieser Gruppe durchgehen
+  const matches = window.tournamentData.matches
+    .filter((m) => m.groupIndex === groupIndex)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // Statistik für jedes Spiel berechnen
-  groupMatches.forEach((match) => {
-    const homeTeam = group.teams[match.team1Index];
-    const awayTeam = group.teams[match.team2Index];
-
+  matches.forEach((match) => {
+    const homeTeam = group.teams.find((t) => t.id === match.homeId);
+    const awayTeam = group.teams.find((t) => t.id === match.awayId);
     if (!homeTeam || !awayTeam) return;
 
-    // Grundstatistiken aktualisieren
     homeTeam.matchesPlayed++;
     awayTeam.matchesPlayed++;
-    homeTeam.games++;
-    awayTeam.games++;
-
-    // Tore aktualisieren
     homeTeam.goalsFor += match.homeGoals;
     homeTeam.goalsAgainst += match.awayGoals;
     awayTeam.goalsFor += match.awayGoals;
     awayTeam.goalsAgainst += match.homeGoals;
 
-    // Spielausgang verarbeiten
     if (match.homeGoals > match.awayGoals) {
       homeTeam.wins++;
       awayTeam.losses++;
@@ -322,38 +332,24 @@ function recomputeGroupTable(groupIndex) {
       homeTeam.form.push("W");
       awayTeam.form.push("L");
     } else if (match.homeGoals < match.awayGoals) {
-      homeTeam.losses++;
       awayTeam.wins++;
+      homeTeam.losses++;
       awayTeam.points += 3;
-      homeTeam.form.push("L");
       awayTeam.form.push("W");
+      homeTeam.form.push("L");
     } else {
       homeTeam.draws++;
       awayTeam.draws++;
-      homeTeam.points += 1;
-      awayTeam.points += 1;
+      homeTeam.points++;
+      awayTeam.points++;
       homeTeam.form.push("D");
       awayTeam.form.push("D");
     }
   });
 
-  // Finale Berechnungen für jedes Team
+  // Finale Werte (Tordifferenz + nur letzte 3 Spiele in Form)
   group.teams.forEach((team) => {
-    // Tordifferenz berechnen
     team.goalDifference = team.goalsFor - team.goalsAgainst;
-
-    // Nur die letzten 3 Spiele behalten (neueste zuerst)
     team.form = team.form.slice(-3).reverse();
-
-    // Sicherstellen, dass alle Werte definiert sind
-    team.wins = team.wins || 0;
-    team.losses = team.losses || 0;
-    team.draws = team.draws || 0;
-    team.points = team.points || 0;
-    team.goalsFor = team.goalsFor || 0;
-    team.goalsAgainst = team.goalsAgainst || 0;
   });
 }
-
-// Initialisierung
-window.generateSchedule = generateSchedule;
