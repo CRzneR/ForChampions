@@ -6,7 +6,7 @@ const teamSchema = new mongoose.Schema({
   tournamentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Tournament",
-    required: true, // jedes Team gehört zu einem Turnier
+    required: true,
   },
   wins: { type: Number, default: 0 },
   losses: { type: Number, default: 0 },
@@ -17,7 +17,8 @@ const teamSchema = new mongoose.Schema({
   form: { type: [String], default: [] },
 });
 
-// ✅ Compound-Index: Name darf sich wiederholen, aber NICHT zweimal im gleichen Turnier
+// 🔹 Wichtig: alter globaler Index auf `name` muss weg!
+// 🔹 Richtig: Name + TurnierId müssen zusammen eindeutig sein
 teamSchema.index({ tournamentId: 1, name: 1 }, { unique: true });
 
 const Team = mongoose.model("Team", teamSchema);
