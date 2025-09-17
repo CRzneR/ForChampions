@@ -5,6 +5,8 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 
+const matchesRoutes = require("./routes/matches");
+
 // --- Express App ---
 const app = express();
 
@@ -35,10 +37,12 @@ app.use((req, res, next) => {
 const authRoutes = require("./routes/auth");
 const tournamentRoutes = require("./routes/tournaments");
 const matchRoutes = require("./routes/matches");
+const matchesRoutes = require("./routes/matches");
 
 app.use("/api", authRoutes);
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/tournaments", matchRoutes);
+app.use("/api/tournaments/:id/matches", matchesRoutes);
 
 // --- Health Check ---
 app.get("/health", (req, res) => {
