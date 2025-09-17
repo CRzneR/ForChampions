@@ -5,6 +5,25 @@ const authenticateToken = require("../middleware/auth");
 
 const router = express.Router();
 
+/**
+ * Hilfsfunktion: Alle Paarungen einer Gruppe erzeugen (Round-Robin)
+ */
+function generateGroupMatches(teamIds) {
+  const matches = [];
+  for (let i = 0; i < teamIds.length; i++) {
+    for (let j = i + 1; j < teamIds.length; j++) {
+      matches.push({
+        team1: teamIds[i],
+        team2: teamIds[j],
+        score1: 0,
+        score2: 0,
+        played: false,
+      });
+    }
+  }
+  return matches;
+}
+
 // --- Turnier erstellen ---
 router.post("/", authenticateToken, async (req, res) => {
   try {
@@ -34,6 +53,11 @@ router.post("/", authenticateToken, async (req, res) => {
       groups[groupIndex].teams.push(team._id);
     });
 
+    // Für jede Gruppe Matches generieren
+    groups.forEach((group) => {
+      group.matches = generateGroupMatches(group.teams);
+    });
+
     // Turnier anlegen
     const tournament = new Tournament({
       name,
@@ -45,9 +69,11 @@ router.post("/", authenticateToken, async (req, res) => {
 
     await tournament.save();
 
-    // Populieren: Teams + Gruppen-Teams
+    // Populieren: Teams + Gruppen-Teams + Matches
     await tournament.populate("teams");
     await tournament.populate("groups.teams");
+    await tournament.populate("groups.matches.team1");
+    await tournament.populate("groups.matches.team2");
 
     res.status(201).json(tournament);
   } catch (error) {
@@ -62,6 +88,8 @@ router.get("/", authenticateToken, async (req, res) => {
     const tournaments = await Tournament.find({ createdBy: req.user.userId })
       .populate("teams")
       .populate("groups.teams")
+      .populate("groups.matches.team1")
+      .populate("groups.matches.team2")
       .sort({ createdAt: -1 });
 
     res.json(tournaments);
@@ -103,7 +131,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
       { new: true, runValidators: true }
     )
       .populate("teams")
-      .populate("groups.teams");
+      .populate("groups.teams")
+      .populate("groups.matches.team1")
+      .populate("groups.matches.team2");
 
     if (!tournament) {
       return res.status(404).json({ message: "Turnier nicht gefunden" });

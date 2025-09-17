@@ -1,6 +1,5 @@
 // --- UI + Core ---
 import { setupTabNavigation } from "./ui-tabs.js";
-import { updateTeamStats, removeMatchResults } from "./matches.js";
 import { showAlert } from "./ui-alert.js";
 import { generateGroups } from "./groups.js";
 
@@ -14,7 +13,7 @@ import { updateDashboard } from "./dashboard.js";
 import { initCreateModule } from "./create.js";
 
 // --- Weitere Module ---
-import { generateSchedule, generateMatchdays } from "./schedule.js";
+import { generateSchedule } from "./schedule.js";
 import { generatePlayoffs } from "./playoffs.js";
 
 // --- Globale Initialisierung ---
@@ -23,12 +22,9 @@ if (!window.tournamentData) {
 }
 
 // --- Globale Hooks (für onclick etc.) ---
-window.updateTeamStats = updateTeamStats;
-window.removeMatchResults = removeMatchResults;
 window.showAlert = showAlert;
 window.updateDashboard = updateDashboard;
 window.generateSchedule = generateSchedule;
-window.generateMatchdays = generateMatchdays;
 window.generateGroups = generateGroups;
 window.generatePlayoffs = generatePlayoffs;
 
