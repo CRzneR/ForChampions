@@ -35,7 +35,6 @@ app.use((req, res, next) => {
 const authRoutes = require("./routes/auth");
 const tournamentRoutes = require("./routes/tournaments");
 const matchesRoutes = require("./routes/matches");
-const matchesRoutes = require("./routes/matches");
 
 app.use("/api", authRoutes);
 app.use("/api/tournaments", tournamentRoutes);
