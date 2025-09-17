@@ -1,65 +1,334 @@
-// --- UI + Core ---
-import { setupTabNavigation } from "./ui-tabs.js";
-import { updateTeamStats, removeMatchResults } from "./matches.js";
-import { showAlert } from "./ui-alert.js";
-import { generateGroups } from "./groups.js";
+// client/js/dashboard.js – Dashboard-Logik mit DB-Anbindung
 
-// --- API ---
-import { initializeApp, getCurrentTournament, getCurrentUser } from "./api.js";
+import { loadTournament } from "./api.js";
 
-// --- Dashboard ---
-import { updateDashboard } from "./dashboard.js";
+// Lokale Referenz auf das aktuelle Turnier
+let activeTournament = null;
 
-// --- Turnier-Erstellung ---
-import { initCreateModule } from "./create.js";
-
-// --- Weitere Module ---
-import { generateSchedule } from "./schedule.js"; // ❌ generateMatchdays entfernt
-import { generatePlayoffs } from "./playoffs.js";
-
-// --- Globale Initialisierung ---
-if (!window.tournamentData) {
-  window.tournamentData = {}; // wird von API gefüllt
+// Initialisiert das Dashboard
+async function initDashboard() {
+  await updateDashboard();
 }
 
-// --- Globale Hooks (für onclick etc.) ---
-window.updateTeamStats = updateTeamStats;
-window.removeMatchResults = removeMatchResults;
-window.showAlert = showAlert;
-window.updateDashboard = updateDashboard;
-window.generateSchedule = generateSchedule;
-window.generateGroups = generateGroups;
-window.generatePlayoffs = generatePlayoffs;
+// Aktualisiert die Turnierinfo
+function updateTournamentInfo() {
+  const infoContent = document.getElementById("tournament-info-content");
 
-// Zugriff auf API-States
-window.getCurrentTournament = getCurrentTournament;
-window.getCurrentUser = getCurrentUser;
-
-// --- App-Start ---
-document.addEventListener("DOMContentLoaded", async () => {
-  setupTabNavigation();
-
-  try {
-    // 🔹 Lädt immer frische Daten aus MongoDB (nicht nur LocalStorage!)
-    await initializeApp();
-  } catch (err) {
-    console.error("Fehler beim Initialisieren:", err);
-    showAlert("Fehler beim Laden der App", "error");
+  if (!activeTournament) {
+    infoContent.innerHTML = `
+      <p class="text-gray-400">Kein aktives Turnier</p>
+      <button 
+        data-tab="create" 
+        class="mt-4 px-4 py-2 bg-gradient-to-r from-[#CA5818] to-[#EF1475] text-white rounded-md hover:opacity-90 transition"
+      >
+        Turnier erstellen
+      </button>
+    `;
+    return;
   }
 
-  // Tabs → Module rendern
-  const tabGroups = document.querySelector('[data-tab="groups"]');
-  if (tabGroups) tabGroups.addEventListener("click", generateGroups);
+  infoContent.innerHTML = `
+    <div class="space-y-2">
+      <p><span class="font-medium text-white">Name:</span> ${
+        activeTournament.name
+      }</p>
+      <p><span class="font-medium text-white">Teams:</span> ${
+        activeTournament.teams?.length || 0
+      }</p>
+      <p><span class="font-medium text-white">Gruppen:</span> ${
+        activeTournament.groups?.length || 0
+      }</p>
+      <p><span class="font-medium text-white">Playoff-Plätze:</span> ${
+        activeTournament.playoffSpots || 0
+      }</p>
+      <p><span class="font-medium text-white">Status:</span> ${
+        activeTournament.status || "In Vorbereitung"
+      }</p>
+    </div>
+  `;
+}
 
-  const tabSchedule = document.querySelector('[data-tab="schedule"]');
-  if (tabSchedule) tabSchedule.addEventListener("click", generateSchedule);
+// Zeigt die nächsten Spiele
+function generateCurrentMatches() {
+  const container = document.getElementById("current-matches-content");
 
-  const tabPlayoffs = document.querySelector('[data-tab="playoffs"]');
-  if (tabPlayoffs) tabPlayoffs.addEventListener("click", generatePlayoffs);
+  if (!activeTournament || !activeTournament.groups) {
+    container.innerHTML = `
+      <p class="text-gray-400 text-center py-4">Keine anstehenden Spiele</p>
+    `;
+    return;
+  }
 
-  const tabCreate = document.querySelector('[data-tab="create"]');
-  if (tabCreate) {
-    tabCreate.addEventListener("click", initCreateModule);
-    tabCreate.click(); // Standardmäßig öffnen
+  const upcomingMatches = [];
+
+  activeTournament.groups.forEach((group, groupIndex) => {
+    group.matches?.forEach((match, matchIndex) => {
+      const isPlayed = match.homeGoals != null && match.awayGoals != null;
+
+      if (!isPlayed) {
+        upcomingMatches.push({
+          groupIndex,
+          matchIndex,
+          match,
+          groupName: group.name,
+        });
+      }
+    });
+  });
+
+  const nextMatches = upcomingMatches.slice(0, 5);
+
+  if (nextMatches.length === 0) {
+    container.innerHTML = `
+      <p class="text-gray-400 text-center py-4">Keine anstehenden Spiele</p>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="space-y-3">
+      ${nextMatches
+        .map(
+          (m) => `
+        <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-accent transition-colors">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs text-gray-400">${m.groupName}</span>
+            <button 
+              onclick="navigateToMatch(${m.groupIndex}, ${m.matchIndex})"
+              class="text-xs text-accent hover:underline"
+            >
+              Zum Spiel
+            </button>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-white">${
+              m.match.team1?.name || "?"
+            }</span>
+            <span class="mx-2 text-gray-300">vs</span>
+            <span class="font-medium text-white">${
+              m.match.team2?.name || "?"
+            }</span>
+          </div>
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+    ${
+      upcomingMatches.length > 5
+        ? `
+      <div class="mt-3 text-center">
+        <button data-tab="schedule" class="text-sm text-accent hover:underline">
+          + ${upcomingMatches.length - 5} weitere anzeigen
+        </button>
+      </div>
+    `
+        : ""
+    }
+  `;
+}
+
+// Zeigt die Top Teams
+function generateTopTeams() {
+  const container = document.getElementById("top-teams-content");
+
+  if (
+    !activeTournament ||
+    !activeTournament.groups ||
+    activeTournament.playoffSpots <= 0
+  ) {
+    container.innerHTML = `
+      <p class="text-gray-400 text-center py-4">
+        ${
+          activeTournament?.playoffSpots <= 0
+            ? "Keine Playoff-Plätze definiert"
+            : "Kein aktives Turnier"
+        }
+      </p>
+    `;
+    return;
+  }
+
+  let allTeams = [];
+  activeTournament.groups.forEach((group) => {
+    const sortedTeams = [...group.teams].sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
+    });
+
+    const playoffTeams = sortedTeams.slice(0, activeTournament.playoffSpots);
+    allTeams = [...allTeams, ...playoffTeams];
+  });
+
+  allTeams.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
+  });
+
+  if (allTeams.length === 0) {
+    container.innerHTML = `<p class="text-gray-400 text-center py-4">Keine Teams auf Playoff-Plätzen</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-800">
+        <thead class="bg-primary">
+          <tr>
+            <th class="px-3 py-2 text-left text-xs text-gray-300">Team</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">S</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">N</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">U</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Tore</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Pkt.</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Form</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          ${allTeams
+            .map(
+              (team) => `
+            <tr class="hover:bg-primary transition-colors">
+              <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-white">${
+                team.name
+              }</td>
+              <td class="px-3 py-2 text-center text-green-400">${team.wins}</td>
+              <td class="px-3 py-2 text-center text-red-400">${team.losses}</td>
+              <td class="px-3 py-2 text-center text-yellow-400">${
+                team.draws
+              }</td>
+              <td class="px-3 py-2 text-gray-300">${team.goalsFor}:${
+                team.goalsAgainst
+              }</td>
+              <td class="px-3 py-2 font-bold text-center text-white">${
+                team.points
+              }</td>
+              <td class="px-3 py-2">
+                <div class="flex space-x-1">
+                  ${(team.form || [])
+                    .map((result) => {
+                      const colors = {
+                        W: "bg-green-600 text-white",
+                        L: "bg-red-600 text-white",
+                        D: "bg-yellow-500 text-gray-900",
+                      };
+                      return `<span class="w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
+                        colors[result] || "bg-gray-600"
+                      }">${result}</span>`;
+                    })
+                    .join("")}
+                </div>
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Generiert die Gruppenansicht
+function generateDashboardGroups() {
+  const container = document.getElementById("dashboard-groups-container");
+  const infoElement = document.getElementById("dashboard-groups-info");
+
+  if (!activeTournament || !activeTournament.groups) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-8 text-gray-400">
+        Kein aktives Turnier oder keine Gruppen vorhanden
+      </div>
+    `;
+    infoElement.textContent = "Kein aktives Turnier";
+    return;
+  }
+
+  infoElement.textContent = `${activeTournament.name} - Aktuelle Gruppenstände`;
+  container.innerHTML = "";
+
+  activeTournament.groups.forEach((group) => {
+    group.teams.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
+    });
+
+    const groupElement = document.createElement("div");
+    groupElement.className =
+      "bg-primary-light rounded-lg border border-gray-800 overflow-hidden";
+    groupElement.innerHTML = `
+      <div class="px-4 py-2 bg-primary border-b border-gray-800">
+        <h3 class="font-bold text-white">${group.name}</h3>
+      </div>
+      <div class="divide-y divide-gray-800">
+        ${group.teams
+          .map(
+            (team, index) => `
+          <div class="px-3 py-2 flex items-center justify-between ${
+            index < activeTournament.playoffSpots
+              ? "bg-green-900 bg-opacity-20"
+              : ""
+          }">
+            <span class="text-sm font-medium ${
+              index < activeTournament.playoffSpots
+                ? "text-green-400"
+                : "text-white"
+            }">${team.name}</span>
+            <span class="text-xs font-bold ${
+              index < activeTournament.playoffSpots
+                ? "text-green-400"
+                : "text-gray-300"
+            }">${team.points}</span>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    `;
+    container.appendChild(groupElement);
+  });
+}
+
+// Navigation zu einem Spiel
+window.navigateToMatch = function (groupIndex, matchIndex) {
+  document.querySelector('[data-tab="schedule"]').click();
+
+  setTimeout(() => {
+    const matchId = `g${groupIndex}-m${matchIndex}`;
+    const matchElement = document.getElementById(`${matchId}-home`);
+    if (matchElement) {
+      matchElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      matchElement.closest("tr").classList.add("bg-accent", "bg-opacity-20");
+      setTimeout(() => {
+        matchElement
+          .closest("tr")
+          .classList.remove("bg-accent", "bg-opacity-20");
+      }, 2000);
+    }
+  }, 500);
+};
+
+// Aktualisiert das Dashboard
+export async function updateDashboard() {
+  try {
+    const tournamentId = localStorage.getItem("currentTournamentId");
+    if (!tournamentId) return;
+
+    activeTournament = await loadTournament(tournamentId);
+
+    updateTournamentInfo();
+    generateDashboardGroups();
+    generateCurrentMatches();
+    generateTopTeams();
+  } catch (err) {
+    console.error("Fehler beim Dashboard-Update:", err);
+  }
+}
+
+// Tab-Listener
+document.addEventListener("DOMContentLoaded", () => {
+  const dashboardTab = document.querySelector('[data-tab="dashboard"]');
+  if (dashboardTab) {
+    dashboardTab.addEventListener("click", initDashboard);
   }
 });
