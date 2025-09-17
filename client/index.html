@@ -11,21 +11,10 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <style>
-      .auth-transition {
-        transition: all 0.3s ease;
-      }
-      .login-container {
-        background: linear-gradient(135deg, #21222d 0%, #14181d 100%);
+      body {
+        background-color: #14181d;
       }
     </style>
-    <script>
-      // ✅ Direkt prüfen ob User eingeloggt ist
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
-      if (!token || !user) {
-        window.location.href = "login.html";
-      }
-    </script>
   </head>
   <body class="bg-[#14181D]">
     <div id="alert-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
@@ -133,14 +122,6 @@
               </li>
               <li>
                 <button
-                  class="w-full text-left px-4 py-2 rounded hover:bg-[#99491C] hover:text-white text-gray-300 flex items-center"
-                >
-                  <i data-lucide="help-circle" class="w-5 h-5 mr-3"></i>
-                  Hilfe
-                </button>
-              </li>
-              <li>
-                <button
                   id="logoutButton"
                   class="w-full text-left px-4 py-2 rounded hover:bg-red-600 hover:text-white text-gray-300 flex items-center"
                 >
@@ -157,31 +138,21 @@
           <!-- Dashboard Tab -->
           <div id="dashboard-content" class="tab-content">
             <div class="grid grid-cols-1 gap-6">
-              <!-- Übersichtskarten -->
               <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Turnierinfo Karte -->
                 <div
                   class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
                 >
                   <h3 class="text-lg font-bold text-white mb-4">Turnierinfo</h3>
-                  <div id="tournament-info-content" class="text-gray-300">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
+                  <div id="tournament-info-content" class="text-gray-300"></div>
                 </div>
-
-                <!-- Aktuelle Spiele Karte -->
                 <div
                   class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
                 >
                   <h3 class="text-lg font-bold text-white mb-4">
                     Nächste Spiele
                   </h3>
-                  <div id="current-matches-content">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
+                  <div id="current-matches-content"></div>
                 </div>
-
-                <!-- Top Teams Karte -->
                 <div
                   class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800 p-6"
                 >
@@ -193,13 +164,10 @@
                       Playoff-Plätze
                     </span>
                   </div>
-                  <div id="top-teams-content">
-                    <!-- Wird von JavaScript gefüllt -->
-                  </div>
+                  <div id="top-teams-content"></div>
                 </div>
               </div>
 
-              <!-- Gruppenübersicht -->
               <div
                 class="bg-[#21222D] rounded-lg shadow-lg border border-gray-800"
               >
@@ -221,42 +189,39 @@
             </div>
           </div>
 
-          <!-- Turnier erstellen Tab -->
+          <!-- Weitere Tabs -->
           <div id="create-content" class="tab-content hidden"></div>
-
-          <!-- Gruppen Tab -->
           <div id="groups-content" class="tab-content hidden"></div>
-
-          <!-- Spielplan Tab -->
           <div id="schedule-content" class="tab-content hidden"></div>
-
-          <!-- Playoffs Tab -->
           <div id="playoffs-content" class="tab-content hidden"></div>
         </div>
       </div>
     </div>
 
-    <!-- JavaScript Dateien -->
+    <!-- JavaScript -->
     <script type="module" src="./js/app.js"></script>
     <script>
-      lucide.createIcons();
-
-      // Logout-Button
-      const logoutButton = document.getElementById("logoutButton");
-      if (logoutButton) {
-        logoutButton.addEventListener("click", () => {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = JSON.parse(localStorage.getItem("user") || "null");
+        if (!user) {
           window.location.href = "login.html";
-        });
-      }
+          return;
+        }
+        const usernameDisplay = document.getElementById("usernameDisplay");
+        if (usernameDisplay) {
+          usernameDisplay.textContent = user.username;
+        }
 
-      // Username anzeigen
-      const usernameDisplay = document.getElementById("usernameDisplay");
-      const parsedUser = JSON.parse(localStorage.getItem("user") || "null");
-      if (usernameDisplay && parsedUser) {
-        usernameDisplay.textContent = parsedUser.username;
-      }
+        // Logout
+        const logoutButton = document.getElementById("logoutButton");
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+            window.location.href = "login.html";
+          });
+        }
+      });
     </script>
   </body>
 </html>
