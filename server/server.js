@@ -35,12 +35,10 @@ app.use((req, res, next) => {
 const authRoutes = require("./routes/auth");
 const tournamentRoutes = require("./routes/tournaments");
 const matchRoutes = require("./routes/matches");
-const matchesRoutes = require("./routes/matches");
 
-app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes); // ✅ korrigiert
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/tournaments", matchRoutes);
-app.use("/api/tournaments/:id/matches", matchesRoutes);
 
 // --- Health Check ---
 app.get("/health", (req, res) => {
@@ -52,7 +50,6 @@ app.get("/health", (req, res) => {
 });
 
 // --- Statische Dateien (Frontend) ---
-// Hier nehmen wir den client-Ordner, in dem deine index.html liegt
 app.use(
   express.static(path.join(__dirname, "../client"), {
     setHeaders: (res, filePath) => {
@@ -67,16 +64,9 @@ app.use(
 );
 
 // --- SPA Fallback ---
-// Jede Anfrage, die nicht mit /api beginnt → index.html zurückgeben
 app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    return next(); // API-Routen nicht überschreiben
-  }
+  if (req.path.startsWith("/api")) return next();
   res.sendFile(path.join(__dirname, "../client/index.html"));
-});
-
-app.get("/api/test", (req, res) => {
-  res.json({ message: "Server läuft 🚀" });
 });
 
 // --- Server Start ---

@@ -8,15 +8,7 @@ import { createTournament } from "./api.js"; // ✅ API-Call einbinden
 
 // 🔹 Globales Objekt initialisieren (falls noch nicht vorhanden)
 if (!window.tournamentData) {
-  window.tournamentData = {
-    name: "",
-    description: "",
-    teams: [],
-    groups: [],
-    groupCount: 0,
-    playoffSpots: 0,
-    teamNames: [],
-  };
+  window.tournamentData = {};
 }
 
 export function initCreateModule() {
@@ -91,9 +83,13 @@ function prepareTeamNameInput() {
   }
 
   // 🔹 Daten im globalen Objekt zwischenspeichern
-  window.tournamentData.name = name;
-  window.tournamentData.groupCount = groupCount;
-  window.tournamentData.playoffSpots = playoffSpots;
+  window.tournamentData = {
+    ...window.tournamentData,
+    name,
+    groupCount,
+    playoffSpots,
+    teamCount,
+  };
 
   // Teamnamen-Eingabe anzeigen
   const root = document.getElementById("create-content");
@@ -135,6 +131,7 @@ function prepareTeamNameInput() {
       const names = [...inputs.querySelectorAll("input")].map(
         (i) => i.value.trim() || "Unnamed Team"
       );
+
       window.tournamentData.teamNames = names;
 
       try {
