@@ -6,7 +6,7 @@ import { updateDashboard } from "./dashboard.js";
 let currentTournament = null;
 let currentUser = null;
 
-// ✅ API-Basis-URL dynamisch – funktioniert lokal & bei Render
+// ✅ Nur /api, nicht doppelt – funktioniert lokal & auf Render
 const API_BASE_URL = "/api";
 
 // 🔹 Turnier erstellen
@@ -170,7 +170,7 @@ export async function refreshTournament() {
     return null;
   }
   try {
-    const tournament = await loadTournament(id); // nutzt bereits existierende Funktion
+    const tournament = await loadTournament(id);
     return tournament;
   } catch (err) {
     console.error("❌ Fehler beim Aktualisieren des Turniers:", err);
