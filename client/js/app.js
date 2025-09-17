@@ -1,11 +1,11 @@
 // --- UI + Core ---
 import { setupTabNavigation } from "./ui-tabs.js";
-import { initializeTournamentData, generateGroups } from "./groups.js";
 import { updateTeamStats, removeMatchResults } from "./matches.js";
 import { showAlert } from "./ui-alert.js";
+import { generateGroups } from "./groups.js";
 
 // --- API ---
-import { initializeApp } from "./api.js";
+import { initializeApp, getCurrentTournament, getCurrentUser } from "./api.js";
 
 // --- Dashboard ---
 import { updateDashboard } from "./dashboard.js";
@@ -19,18 +19,10 @@ import { generatePlayoffs } from "./playoffs.js";
 
 // --- Globale Initialisierung ---
 if (!window.tournamentData) {
-  window.tournamentData = {
-    name: "",
-    teams: [],
-    groups: [],
-    matches: [],
-    playoffSpots: 0,
-    teamNames: [],
-  };
+  window.tournamentData = {}; // wird von API gefüllt
 }
 
-// Globale Hooks (für onclick etc.)
-window.initializeTournamentData = initializeTournamentData;
+// --- Globale Hooks (für onclick etc.) ---
 window.updateTeamStats = updateTeamStats;
 window.removeMatchResults = removeMatchResults;
 window.showAlert = showAlert;
@@ -40,13 +32,21 @@ window.generateMatchdays = generateMatchdays;
 window.generateGroups = generateGroups;
 window.generatePlayoffs = generatePlayoffs;
 
+// Zugriff auf API-States
+window.getCurrentTournament = getCurrentTournament;
+window.getCurrentUser = getCurrentUser;
+
 // --- App-Start ---
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   setupTabNavigation();
 
-  initializeApp().catch((err) => {
+  try {
+    // 🔹 Lädt immer frische Daten aus MongoDB (nicht nur LocalStorage!)
+    await initializeApp();
+  } catch (err) {
     console.error("Fehler beim Initialisieren:", err);
-  });
+    showAlert("Fehler beim Laden der App", "error");
+  }
 
   // Tabs → Module rendern
   const tabGroups = document.querySelector('[data-tab="groups"]');

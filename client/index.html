@@ -511,64 +511,6 @@
         resetErrors();
       }
 
-      // Serververbindung testen
-      async function testServerConnection() {
-        try {
-          serverStatus.classList.remove("hidden");
-          serverStatus.classList.remove(
-            "bg-green-900",
-            "text-green-200",
-            "bg-red-900",
-            "text-red-200"
-          );
-          serverStatus.classList.add("bg-yellow-900", "text-yellow-200");
-          serverStatusText.innerHTML =
-            '<i class="fas fa-sync-alt fa-spin mr-2"></i> Verbindung zum Server wird hergestellt...';
-
-          const response = await fetch(`${API_BASE_URL}/api/test`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            serverStatus.classList.remove("bg-yellow-900", "text-yellow-200");
-            serverStatus.classList.add("bg-green-900", "text-green-200");
-            serverStatusText.innerHTML =
-              '<i class="fas fa-check-circle mr-2"></i> Verbindung zum Server erfolgreich';
-
-            setTimeout(() => {
-              serverStatus.classList.add("hidden");
-            }, 3000);
-          } else {
-            throw new Error("Server responded with error");
-          }
-        } catch (error) {
-          serverStatus.classList.remove("bg-yellow-900", "text-yellow-200");
-          serverStatus.classList.add("bg-red-900", "text-red-200");
-          serverStatusText.innerHTML =
-            '<i class="fas fa-exclamation-triangle mr-2"></i> Keine Verbindung zum Server. Stelle sicher, dass der Server läuft.';
-
-          if (
-            loginFormElement &&
-            loginFormElement.querySelector('button[type="submit"]')
-          ) {
-            loginFormElement.querySelector(
-              'button[type="submit"]'
-            ).disabled = true;
-          }
-          if (
-            registerFormElement &&
-            registerFormElement.querySelector('button[type="submit"]')
-          ) {
-            registerFormElement.querySelector(
-              'button[type="submit"]'
-            ).disabled = true;
-          }
-        }
-      }
-
       // Tab-Wechsel
       if (loginTab && registerTab) {
         loginTab.addEventListener("click", () => {
@@ -682,15 +624,6 @@
       if (logoutButton) {
         logoutButton.addEventListener("click", logout);
       }
-
-      // Initialisierung
-      document.addEventListener("DOMContentLoaded", function () {
-        const isLoggedIn = checkLoginStatus();
-        if (!isLoggedIn) {
-          testServerConnection();
-        }
-        lucide.createIcons();
-      });
     </script>
   </body>
 </html>

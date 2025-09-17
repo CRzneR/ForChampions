@@ -1,12 +1,12 @@
-// client/js/schedule.js
+// schedule.js – Spielplan-Logik mit Speicherung in DB
 
 import { generateGroups } from "./groups.js";
 import { updateDashboard } from "./dashboard.js";
 import { showAlert } from "./ui-alert.js";
+import { saveMatchResult } from "./api.js"; // ✅ API-Call einbinden
 
 /**
  * Rendert die Spielplan-Ansicht mit Eingabefeldern für Ergebnisse.
- * Kann beliebig oft aufgerufen werden (z.B. nach Änderungen).
  */
 export function generateSchedule() {
   const wrap = document.getElementById("schedule-content");
@@ -26,13 +26,7 @@ export function generateSchedule() {
 
   const container = document.getElementById("schedule-container");
 
-  // Grundvalidierung
-  if (
-    !window.tournamentData ||
-    !window.tournamentData.name ||
-    !Array.isArray(window.tournamentData.groups) ||
-    window.tournamentData.groups.length === 0
-  ) {
+  if (!window.tournamentData?.groups?.length) {
     container.innerHTML = `
       <p class="text-gray-400 text-center py-8">
         Bitte zuerst ein Turnier erstellen
@@ -44,8 +38,7 @@ export function generateSchedule() {
   container.innerHTML = "";
 
   window.tournamentData.groups.forEach((group, gIdx) => {
-    // Abbruch, wenn keine Teams
-    if (!Array.isArray(group.teams) || group.teams.length === 0) return;
+    if (!group.teams?.length) return;
 
     const groupDiv = document.createElement("div");
     groupDiv.className =
@@ -85,10 +78,6 @@ export function generateSchedule() {
       const tbody = dayDiv.querySelector("tbody");
 
       day.forEach((match, mIdx) => {
-        // Fallback-IDs erzeugen, falls Teamobjekte noch keine id besitzen
-        const homeId = match.home.id || `${group.name}-home-${mIdx}`;
-        const awayId = match.away.id || `${group.name}-away-${mIdx}`;
-
         const rowId = `g${gIdx}-d${dIdx}-m${mIdx}`;
         const existing = (window.tournamentData.matches || []).find(
           (m) => m.id === rowId
@@ -120,14 +109,14 @@ export function generateSchedule() {
               </div>
             </td>
             <td class="px-4 py-3">
-              <div class="flex items-center gap-2">
-                <button
-                  onclick="saveMatchResult('${rowId}', ${gIdx}, '${homeId}', '${awayId}')"
-                  class="px-3 py-1 bg-accent hover:bg-accent-hover text-white rounded-md"
-                >
-                  Speichern
-                </button>
-              </div>
+              <button
+                onclick="saveMatchResultHandler('${rowId}', ${gIdx}, '${
+          match.home._id
+        }', '${match.away._id}')"
+                class="px-3 py-1 bg-accent hover:bg-accent-hover text-white rounded-md"
+              >
+                Speichern
+              </button>
             </td>
           </tr>
         `;
@@ -142,23 +131,20 @@ export function generateSchedule() {
 
 /**
  * Erstellt die Spieltage (Round-Robin, nur Hinrunde).
- * Erwartet eine Teamliste mit mindestens name (id optional).
  */
 export function generateMatchdays(teams) {
   const list = (teams || []).map((t, idx) => ({
-    id: t.id ?? `t-${idx}`,
+    id: t._id ?? `t-${idx}`,
     name: t.name ?? `Team ${idx + 1}`,
   }));
 
   if (list.length < 2) return [];
 
-  // Bye, wenn ungerade Anzahl
   if (list.length % 2 !== 0) list.push({ id: "bye", name: "SPIELFREI" });
 
   const n = list.length;
   const rounds = n - 1;
   const half = n / 2;
-
   const fixed = list[0];
   const rotating = list.slice(1);
 
@@ -167,7 +153,6 @@ export function generateMatchdays(teams) {
   for (let r = 0; r < rounds; r++) {
     const matches = [];
 
-    // Fixes Team vs. Gegner
     const opp = rotating[r % rotating.length];
     if (fixed.id !== "bye" && opp.id !== "bye") {
       matches.push(
@@ -175,7 +160,6 @@ export function generateMatchdays(teams) {
       );
     }
 
-    // Restliche Paarungen
     for (let i = 1; i < half; i++) {
       const hi = (r + i) % rotating.length;
       const ai = (r + rotating.length - i) % rotating.length;
@@ -193,10 +177,14 @@ export function generateMatchdays(teams) {
 }
 
 /**
- * Speichert / überschreibt ein Ergebnis.
- * Eingabefelder bleiben bearbeitbar – Ergebnis ist jederzeit änderbar.
+ * Ergebnis speichern über API
  */
-window.saveMatchResult = function (rowId, groupIndex, homeId, awayId) {
+window.saveMatchResultHandler = async function (
+  rowId,
+  groupIndex,
+  homeId,
+  awayId
+) {
   const homeInput = document.getElementById(`${rowId}-home`);
   const awayInput = document.getElementById(`${rowId}-away`);
 
@@ -204,152 +192,31 @@ window.saveMatchResult = function (rowId, groupIndex, homeId, awayId) {
   const awayGoals = parseInt(awayInput?.value ?? "", 10);
 
   if (isNaN(homeGoals) || isNaN(awayGoals)) {
-    showAlert?.("Bitte gültige Zahlen eingeben!", "error");
-    return;
-  }
-  if (!window.tournamentData) return;
-
-  if (!Array.isArray(window.tournamentData.matches)) {
-    window.tournamentData.matches = [];
-  }
-
-  const idx = window.tournamentData.matches.findIndex((m) => m.id === rowId);
-  const payload = {
-    id: rowId,
-    groupIndex,
-    homeId,
-    awayId,
-    homeGoals,
-    awayGoals,
-    date: new Date().toISOString(),
-  };
-
-  if (idx >= 0) {
-    window.tournamentData.matches[idx] = payload;
-  } else {
-    window.tournamentData.matches.push(payload);
-  }
-
-  // Gruppen neu berechnen + Dashboard aktualisieren (falls Module geladen)
-  try {
-    generateGroups?.();
-    updateDashboard?.();
-  } catch (_) {
-    // stillschweigend ignorieren – UI wird wenigstens im Spielplan aktualisiert
-  }
-
-  showAlert?.("Ergebnis gespeichert!", "success");
-};
-
-window.saveMatchResult = function (rowId, groupIndex, homeId, awayId) {
-  const homeInput = document.getElementById(`${rowId}-home`);
-  const awayInput = document.getElementById(`${rowId}-away`);
-
-  const homeGoals = parseInt(homeInput?.value ?? "", 10);
-  const awayGoals = parseInt(awayInput?.value ?? "", 10);
-
-  if (isNaN(homeGoals) || isNaN(awayGoals)) {
-    showAlert?.("Bitte gültige Zahlen eingeben!", "error");
+    showAlert("Bitte gültige Zahlen eingeben!", "error");
     return;
   }
 
-  if (!window.tournamentData) return;
-  if (!Array.isArray(window.tournamentData.matches)) {
-    window.tournamentData.matches = [];
-  }
-
-  const idx = window.tournamentData.matches.findIndex((m) => m.id === rowId);
-  const payload = {
-    id: rowId,
-    groupIndex,
-    homeId,
-    awayId,
-    homeGoals,
-    awayGoals,
-    date: new Date().toISOString(),
-  };
-
-  if (idx >= 0) {
-    window.tournamentData.matches[idx] = payload;
-  } else {
-    window.tournamentData.matches.push(payload);
-  }
-
-  // NEU: Gruppe neu berechnen
-  recomputeGroupTable(groupIndex);
-
-  // Gruppen + Dashboard aktualisieren
   try {
-    generateGroups?.();
-    updateDashboard?.();
-  } catch (_) {}
+    // 🔹 Ergebnis in DB speichern
+    const updatedTournament = await saveMatchResult(window.tournamentData._id, {
+      matchId: rowId,
+      groupIndex,
+      homeId,
+      awayId,
+      homeGoals,
+      awayGoals,
+    });
 
-  showAlert?.("Ergebnis gespeichert!", "success");
+    // Lokale Daten aktualisieren
+    window.tournamentData = updatedTournament;
+
+    // UI neu aufbauen
+    generateGroups();
+    updateDashboard();
+
+    showAlert("Ergebnis gespeichert!", "success");
+  } catch (err) {
+    console.error("Fehler beim Speichern:", err);
+    showAlert("Fehler beim Speichern des Ergebnisses", "error");
+  }
 };
-
-/**
- * Berechnet für eine Gruppe alle Team-Statistiken neu
- * anhand der gespeicherten Matches.
- */
-function recomputeGroupTable(groupIndex) {
-  const group = window.tournamentData.groups[groupIndex];
-  if (!group) return;
-
-  // Reset
-  group.teams.forEach((team) => {
-    team.wins = 0;
-    team.losses = 0;
-    team.draws = 0;
-    team.points = 0;
-    team.goalsFor = 0;
-    team.goalsAgainst = 0;
-    team.goalDifference = 0;
-    team.matchesPlayed = 0;
-    team.form = [];
-  });
-
-  // Alle Spiele dieser Gruppe durchgehen
-  const matches = window.tournamentData.matches
-    .filter((m) => m.groupIndex === groupIndex)
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  matches.forEach((match) => {
-    const homeTeam = group.teams.find((t) => t.id === match.homeId);
-    const awayTeam = group.teams.find((t) => t.id === match.awayId);
-    if (!homeTeam || !awayTeam) return;
-
-    homeTeam.matchesPlayed++;
-    awayTeam.matchesPlayed++;
-    homeTeam.goalsFor += match.homeGoals;
-    homeTeam.goalsAgainst += match.awayGoals;
-    awayTeam.goalsFor += match.awayGoals;
-    awayTeam.goalsAgainst += match.homeGoals;
-
-    if (match.homeGoals > match.awayGoals) {
-      homeTeam.wins++;
-      awayTeam.losses++;
-      homeTeam.points += 3;
-      homeTeam.form.push("W");
-      awayTeam.form.push("L");
-    } else if (match.homeGoals < match.awayGoals) {
-      awayTeam.wins++;
-      homeTeam.losses++;
-      awayTeam.points += 3;
-      awayTeam.form.push("W");
-      homeTeam.form.push("L");
-    } else {
-      homeTeam.draws++;
-      awayTeam.draws++;
-      homeTeam.points++;
-      awayTeam.points++;
-      homeTeam.form.push("D");
-      awayTeam.form.push("D");
-    }
-  });
-
-  // Finale Werte (Tordifferenz + nur letzte 3 Spiele in Form)
-  group.teams.forEach((team) => {
-    team.goalDifference = team.goalsFor - team.goalsAgainst;
-    team.form = team.form.slice(-3).reverse();
-  });
-}

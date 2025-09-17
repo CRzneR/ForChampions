@@ -1,22 +1,21 @@
-// dashboard.js – Dashboard-Logik
+// client/js/dashboard.js – Dashboard-Logik mit DB-Anbindung
 
 import { generateMatchdays } from "./schedule.js";
+import { loadTournament } from "./api.js";
+
+// Lokale Referenz auf das aktuelle Turnier
+let activeTournament = null;
 
 // Initialisiert das Dashboard
-function initDashboard() {
-  const dashboardContent = document.getElementById("dashboard-content");
-
-  updateTournamentInfo();
-  generateDashboardGroups();
-  generateCurrentMatches();
-  generateTopTeams();
+async function initDashboard() {
+  await updateDashboard();
 }
 
 // Aktualisiert die Turnierinfo
 function updateTournamentInfo() {
   const infoContent = document.getElementById("tournament-info-content");
 
-  if (!tournamentData.name) {
+  if (!activeTournament) {
     infoContent.innerHTML = `
       <p class="text-gray-400">Kein aktives Turnier</p>
       <button 
@@ -32,19 +31,19 @@ function updateTournamentInfo() {
   infoContent.innerHTML = `
     <div class="space-y-2">
       <p><span class="font-medium text-white">Name:</span> ${
-        tournamentData.name
+        activeTournament.name
       }</p>
       <p><span class="font-medium text-white">Teams:</span> ${
-        tournamentData.teams ? tournamentData.teams.length : 0
+        activeTournament.teams?.length || 0
       }</p>
       <p><span class="font-medium text-white">Gruppen:</span> ${
-        tournamentData.groupCount || 0
+        activeTournament.groups?.length || 0
       }</p>
       <p><span class="font-medium text-white">Playoff-Plätze:</span> ${
-        tournamentData.playoffSpots || 0
+        activeTournament.playoffSpots || 0
       }</p>
       <p><span class="font-medium text-white">Status:</span> ${
-        tournamentData.status || "In Vorbereitung"
+        activeTournament.status || "In Vorbereitung"
       }</p>
     </div>
   `;
@@ -54,7 +53,7 @@ function updateTournamentInfo() {
 function generateCurrentMatches() {
   const container = document.getElementById("current-matches-content");
 
-  if (!tournamentData.name || !tournamentData.groups) {
+  if (!activeTournament || !activeTournament.groups) {
     container.innerHTML = `
       <p class="text-gray-400 text-center py-4">Keine anstehenden Spiele</p>
     `;
@@ -62,13 +61,15 @@ function generateCurrentMatches() {
   }
 
   const upcomingMatches = [];
-  tournamentData.groups.forEach((group, groupIndex) => {
+  activeTournament.groups.forEach((group, groupIndex) => {
     const matchdays = generateMatchdays(group.teams);
 
     matchdays.forEach((matchday, dayIndex) => {
       matchday.forEach((match, matchIndex) => {
         const matchId = `group-${groupIndex}-matchday-${dayIndex}-match-${matchIndex}`;
-        const isPlayed = tournamentData.matches.some((m) => m.id === matchId);
+        const isPlayed = activeTournament.matches?.some(
+          (m) => m.id === matchId
+        );
 
         if (!isPlayed) {
           upcomingMatches.push({
@@ -138,14 +139,14 @@ function generateTopTeams() {
   const container = document.getElementById("top-teams-content");
 
   if (
-    !tournamentData.name ||
-    !tournamentData.groups ||
-    tournamentData.playoffSpots <= 0
+    !activeTournament ||
+    !activeTournament.groups ||
+    activeTournament.playoffSpots <= 0
   ) {
     container.innerHTML = `
       <p class="text-gray-400 text-center py-4">
         ${
-          tournamentData.playoffSpots <= 0
+          activeTournament?.playoffSpots <= 0
             ? "Keine Playoff-Plätze definiert"
             : "Kein aktives Turnier"
         }
@@ -155,13 +156,13 @@ function generateTopTeams() {
   }
 
   let allTeams = [];
-  tournamentData.groups.forEach((group) => {
+  activeTournament.groups.forEach((group) => {
     const sortedTeams = [...group.teams].sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
     });
 
-    const playoffTeams = sortedTeams.slice(0, tournamentData.playoffSpots);
+    const playoffTeams = sortedTeams.slice(0, activeTournament.playoffSpots);
     allTeams = [...allTeams, ...playoffTeams];
   });
 
@@ -181,12 +182,12 @@ function generateTopTeams() {
         <thead class="bg-primary">
           <tr>
             <th class="px-3 py-2 text-left text-xs text-gray-300">Team</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">S</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">N</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">U</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">Tore</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">Pkt.</th>
-            <th class="px-3 py-2 text-left text-xs text-gray-300">Form</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">S</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">N</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">U</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Tore</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Pkt.</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">Form</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -235,11 +236,11 @@ function generateTopTeams() {
 }
 
 // Generiert die Gruppenansicht
-export function generateDashboardGroups() {
+function generateDashboardGroups() {
   const container = document.getElementById("dashboard-groups-container");
   const infoElement = document.getElementById("dashboard-groups-info");
 
-  if (!tournamentData.name || !tournamentData.groups) {
+  if (!activeTournament || !activeTournament.groups) {
     container.innerHTML = `
       <div class="col-span-full text-center py-8 text-gray-400">
         Kein aktives Turnier oder keine Gruppen vorhanden
@@ -249,10 +250,10 @@ export function generateDashboardGroups() {
     return;
   }
 
-  infoElement.textContent = `${tournamentData.name} - Aktuelle Gruppenstände`;
+  infoElement.textContent = `${activeTournament.name} - Aktuelle Gruppenstände`;
   container.innerHTML = "";
 
-  tournamentData.groups.forEach((group) => {
+  activeTournament.groups.forEach((group) => {
     group.teams.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
@@ -270,17 +271,17 @@ export function generateDashboardGroups() {
           .map(
             (team, index) => `
           <div class="px-3 py-2 flex items-center justify-between ${
-            index < tournamentData.playoffSpots
+            index < activeTournament.playoffSpots
               ? "bg-green-900 bg-opacity-20"
               : ""
           }">
             <span class="text-sm font-medium ${
-              index < tournamentData.playoffSpots
+              index < activeTournament.playoffSpots
                 ? "text-green-400"
                 : "text-white"
             }">${team.name}</span>
             <span class="text-xs font-bold ${
-              index < tournamentData.playoffSpots
+              index < activeTournament.playoffSpots
                 ? "text-green-400"
                 : "text-gray-300"
             }">${team.points}</span>
@@ -314,11 +315,20 @@ window.navigateToMatch = function (groupIndex, dayIndex, matchIndex) {
 };
 
 // Aktualisiert das Dashboard
-export function updateDashboard() {
-  updateTournamentInfo();
-  generateDashboardGroups();
-  generateCurrentMatches();
-  generateTopTeams();
+export async function updateDashboard() {
+  try {
+    const tournamentId = localStorage.getItem("currentTournamentId");
+    if (!tournamentId) return;
+
+    activeTournament = await loadTournament(tournamentId);
+
+    updateTournamentInfo();
+    generateDashboardGroups();
+    generateCurrentMatches();
+    generateTopTeams();
+  } catch (err) {
+    console.error("Fehler beim Dashboard-Update:", err);
+  }
 }
 
 // Tab-Listener

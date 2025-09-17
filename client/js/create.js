@@ -1,7 +1,10 @@
-import { initializeTournamentData, generateGroups } from "./groups.js";
+// create.js – Turnier-Erstellung mit Speicherung in DB
+
+import { generateGroups } from "./groups.js";
 import { generateSchedule } from "./schedule.js";
 import { updateDashboard } from "./dashboard.js";
 import { showAlert } from "./ui-alert.js";
+import { createTournament } from "./api.js"; // ✅ API-Call einbinden
 
 export function initCreateModule() {
   const root = document.getElementById("create-content");
@@ -74,6 +77,7 @@ function prepareTeamNameInput() {
     return;
   }
 
+  // Daten im globalen Objekt zwischenspeichern
   window.tournamentData.name = name;
   window.tournamentData.groupCount = groupCount;
   window.tournamentData.playoffSpots = playoffSpots;
@@ -110,31 +114,45 @@ function prepareTeamNameInput() {
     inputs.appendChild(div);
   }
 
-  document.getElementById("team-names-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const names = [...inputs.querySelectorAll("input")].map(
-      (i) => i.value.trim() || "Unnamed Team"
-    );
-    window.tournamentData.teamNames = names;
+  // Turnier speichern
+  document
+    .getElementById("team-names-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const names = [...inputs.querySelectorAll("input")].map(
+        (i) => i.value.trim() || "Unnamed Team"
+      );
+      window.tournamentData.teamNames = names;
 
-    // Daten erzeugen
-    initializeTournamentData();
+      try {
+        // 🔹 Turnier über API speichern
+        const tournament = await createTournament({
+          name: window.tournamentData.name,
+          groupCount: window.tournamentData.groupCount,
+          playoffSpots: window.tournamentData.playoffSpots,
+          teams: names.map((n) => ({ name: n })),
+        });
 
-    // Anzeigen aktualisieren
-    const titleEl = document.getElementById("tournament-title");
-    if (titleEl) {
-      titleEl.textContent = window.tournamentData.name;
-      titleEl.classList.remove("hidden");
-    }
+        // UI aktualisieren
+        const titleEl = document.getElementById("tournament-title");
+        if (titleEl) {
+          titleEl.textContent = tournament.name;
+          titleEl.classList.remove("hidden");
+        }
 
-    generateGroups();
-    generateSchedule();
-    updateDashboard();
+        // Gruppen + Spielplan aus DB laden
+        generateGroups();
+        generateSchedule();
+        updateDashboard();
 
-    // Zum Gruppen-Tab wechseln
-    const btn = document.querySelector('[data-tab="groups"]');
-    if (btn) btn.click();
+        // Zum Gruppen-Tab wechseln
+        const btn = document.querySelector('[data-tab="groups"]');
+        if (btn) btn.click();
 
-    showAlert("Turnier erfolgreich erstellt!", "success");
-  });
+        showAlert("Turnier erfolgreich erstellt und gespeichert!", "success");
+      } catch (err) {
+        console.error("Fehler beim Erstellen:", err);
+        showAlert("Fehler beim Erstellen des Turniers", "error");
+      }
+    });
 }
