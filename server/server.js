@@ -67,3 +67,27 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Server läuft auf http://localhost:${PORT}`);
 });
+
+// --- Index-Migration für Teams ---
+const mongoose = require("mongoose");
+const { Team } = require("./models/Team");
+
+mongoose.connection.once("open", async () => {
+  try {
+    const collection = mongoose.connection.db.collection("teams");
+
+    const indexes = await collection.indexes();
+    if (indexes.find((i) => i.name === "name_1")) {
+      console.log("⚠️ Alter Index 'name_1' gefunden – wird gelöscht...");
+      await collection.dropIndex("name_1");
+      console.log("✅ Alter Index 'name_1' gelöscht.");
+    } else {
+      console.log("ℹ️ Kein alter Index 'name_1' vorhanden.");
+    }
+
+    await Team.init(); // sorgt dafür, dass der Compound-Index (tournamentId + name) angelegt wird
+    console.log("✅ Neuer Compound-Index (tournamentId + name) aktiv.");
+  } catch (err) {
+    console.error("❌ Fehler beim Index-Migration:", err);
+  }
+});
