@@ -1,8 +1,5 @@
-// client/js/dashboard.js – Dashboard-Logik mit DB-Anbindung
-
 import { refreshTournament, getCurrentTournament } from "./api.js";
 
-// Lokale Referenz auf das aktuelle Turnier
 let activeTournament = null;
 
 // Initialisiert das Dashboard
@@ -13,6 +10,7 @@ async function initDashboard() {
 // Aktualisiert die Turnierinfo
 function updateTournamentInfo() {
   const infoContent = document.getElementById("tournament-info-content");
+  if (!infoContent) return; // ✅ Abbruch, wenn Container nicht existiert
 
   if (!activeTournament) {
     infoContent.innerHTML = `
@@ -51,6 +49,7 @@ function updateTournamentInfo() {
 // Zeigt die nächsten Spiele
 function generateCurrentMatches() {
   const container = document.getElementById("current-matches-content");
+  if (!container) return; // ✅
 
   if (!activeTournament || !activeTournament.groups) {
     container.innerHTML = `<p class="text-gray-400 text-center py-4">Keine anstehenden Spiele</p>`;
@@ -118,6 +117,7 @@ function generateCurrentMatches() {
 // Zeigt die Top Teams
 function generateTopTeams() {
   const container = document.getElementById("top-teams-content");
+  if (!container) return; // ✅
 
   if (
     !activeTournament ||
@@ -226,6 +226,7 @@ function generateTopTeams() {
 function generateDashboardGroups() {
   const container = document.getElementById("dashboard-groups-container");
   const infoElement = document.getElementById("dashboard-groups-info");
+  if (!container || !infoElement) return; // ✅
 
   if (!activeTournament || !activeTournament.groups) {
     container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400">Kein aktives Turnier oder keine Gruppen vorhanden</div>`;
@@ -277,7 +278,7 @@ function generateDashboardGroups() {
 
 // Navigation zu einem Spiel
 window.navigateToMatch = function (groupIndex, matchIndex) {
-  document.querySelector('[data-tab="schedule"]').click();
+  document.querySelector('[data-tab="schedule"]')?.click();
 
   setTimeout(() => {
     const matchElement = document.getElementById(
@@ -295,10 +296,10 @@ window.navigateToMatch = function (groupIndex, matchIndex) {
   }, 500);
 };
 
-// Dashboard updaten → immer mit DB
+// Dashboard updaten
 export async function updateDashboard() {
   try {
-    await refreshTournament(); // 🔄 DB ziehen
+    await refreshTournament();
     activeTournament = getCurrentTournament();
 
     updateTournamentInfo();

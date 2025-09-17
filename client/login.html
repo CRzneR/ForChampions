@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login – Turnier Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .auth-transition {
+        transition: all 0.3s ease;
+      }
+      .login-container {
+        background: linear-gradient(135deg, #21222d 0%, #14181d 100%);
+      }
+    </style>
+  </head>
+  <body class="bg-[#14181D]">
+    <div
+      class="min-h-screen flex items-center justify-center p-4 login-container"
+    >
+      <div
+        class="bg-[#21222D] rounded-2xl shadow-xl overflow-hidden w-full max-w-md border border-gray-700"
+      >
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-700">
+          <button
+            id="loginTab"
+            class="flex-1 py-4 px-6 text-center font-medium text-[#CA5818] border-b-2 border-[#CA5818]"
+          >
+            Login
+          </button>
+          <button
+            id="registerTab"
+            class="flex-1 py-4 px-6 text-center font-medium text-gray-500"
+          >
+            Registrieren
+          </button>
+        </div>
+
+        <!-- Fehleranzeigen -->
+        <div
+          id="loginError"
+          class="bg-red-900 text-red-200 p-3 rounded-lg hidden"
+        >
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          <span id="loginErrorText"></span>
+        </div>
+        <div
+          id="registerError"
+          class="bg-red-900 text-red-200 p-3 rounded-lg hidden"
+        >
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          <span id="registerErrorText"></span>
+        </div>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="p-6 auth-transition">
+          <form id="loginFormElement" class="space-y-4">
+            <div>
+              <label class="block text-gray-300 mb-2">E-Mail</label>
+              <input
+                type="email"
+                id="loginEmail"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                placeholder="deine@email.com"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-gray-300 mb-2">Passwort</label>
+              <input
+                type="password"
+                id="loginPassword"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition"
+            >
+              Anmelden
+            </button>
+          </form>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="p-6 auth-transition hidden">
+          <form id="registerFormElement" class="space-y-4">
+            <div>
+              <label class="block text-gray-300 mb-2">Benutzername</label>
+              <input
+                type="text"
+                id="registerUsername"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-gray-300 mb-2">E-Mail</label>
+              <input
+                type="email"
+                id="registerEmail"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-gray-300 mb-2">Passwort</label>
+              <input
+                type="password"
+                id="registerPassword"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                required
+              />
+            </div>
+            <div>
+              <label class="block text-gray-300 mb-2"
+                >Passwort bestätigen</label
+              >
+              <input
+                type="password"
+                id="registerConfirmPassword"
+                class="w-full p-3 bg-[#2D303D] border border-gray-600 rounded-lg text-white"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full bg-gradient-to-r from-[#CA5818] to-[#EF1475] text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition"
+            >
+              Registrieren
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE_URL = "/api/auth";
+
+      const loginTab = document.getElementById("loginTab");
+      const registerTab = document.getElementById("registerTab");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+
+      loginTab.addEventListener("click", () => {
+        loginForm.classList.remove("hidden");
+        registerForm.classList.add("hidden");
+        loginTab.classList.add("text-[#CA5818]");
+        registerTab.classList.remove("text-[#CA5818]");
+      });
+
+      registerTab.addEventListener("click", () => {
+        registerForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+        registerTab.classList.add("text-[#CA5818]");
+        loginTab.classList.remove("text-[#CA5818]");
+      });
+
+      // Login
+      document
+        .getElementById("loginFormElement")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("loginEmail").value;
+          const password = document.getElementById("loginPassword").value;
+
+          const res = await fetch(`${API_BASE_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            window.location.href = "index.html";
+          } else {
+            document.getElementById("loginErrorText").textContent =
+              data.message;
+            document.getElementById("loginError").classList.remove("hidden");
+          }
+        });
+
+      // Register
+      document
+        .getElementById("registerFormElement")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const username = document.getElementById("registerUsername").value;
+          const email = document.getElementById("registerEmail").value;
+          const password = document.getElementById("registerPassword").value;
+          const confirm = document.getElementById(
+            "registerConfirmPassword"
+          ).value;
+
+          if (password !== confirm) {
+            document.getElementById("registerErrorText").textContent =
+              "Passwörter stimmen nicht überein";
+            document.getElementById("registerError").classList.remove("hidden");
+            return;
+          }
+
+          const res = await fetch(`${API_BASE_URL}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password }),
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            window.location.href = "index.html";
+          } else {
+            document.getElementById("registerErrorText").textContent =
+              data.message;
+            document.getElementById("registerError").classList.remove("hidden");
+          }
+        });
+    </script>
+  </body>
+</html>

@@ -13,7 +13,7 @@ const API_BASE_URL = "/api";
 export async function createTournament(tournamentData) {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
+    const response = await fetch(`${API_BASE_URL}/tournaments`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -40,7 +40,7 @@ export async function loadTournament(tournamentId) {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(
-      `${API_BASE_URL}/api/tournaments/${tournamentId}`,
+      `${API_BASE_URL}/tournaments/${tournamentId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -63,7 +63,7 @@ export async function loadTournament(tournamentId) {
 export async function loadUserTournaments() {
   try {
     const token = localStorage.getItem("token");
-    const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
+    const response = await fetch(`${API_BASE_URL}/tournaments`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -80,7 +80,7 @@ export async function saveMatchResult(tournamentId, matchData) {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(
-      `${API_BASE_URL}/api/tournaments/${tournamentId}/matches`,
+      `${API_BASE_URL}/tournaments/${tournamentId}/matches`,
       {
         method: "POST",
         headers: {
@@ -109,7 +109,7 @@ export async function savePlayoffMatchResult(tournamentId, matchData) {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(
-      `${API_BASE_URL}/api/tournaments/${tournamentId}/playoffs`,
+      `${API_BASE_URL}/tournaments/${tournamentId}/playoffs`,
       {
         method: "POST",
         headers: {
@@ -159,6 +159,22 @@ export async function initializeApp() {
     } catch (error) {
       console.error("Fehler beim Initialisieren:", error);
     }
+  }
+}
+
+// 🔹 Turnier neu laden (z. B. nach Ergebnis speichern)
+export async function refreshTournament() {
+  const id = localStorage.getItem("currentTournamentId");
+  if (!id) {
+    console.warn("⚠️ Kein Turnier im LocalStorage gefunden");
+    return null;
+  }
+  try {
+    const tournament = await loadTournament(id); // nutzt bereits existierende Funktion
+    return tournament;
+  } catch (err) {
+    console.error("❌ Fehler beim Aktualisieren des Turniers:", err);
+    return null;
   }
 }
 
