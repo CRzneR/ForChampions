@@ -12,6 +12,9 @@ router.post("/", authenticateToken, async (req, res) => {
   try {
     const { name, groupCount, playoffSpots, teams } = req.body;
 
+    console.log("➡️ Turnier erstellen Request:", req.body);
+    console.log("➡️ Authentifizierter User:", req.user);
+
     if (!name || !groupCount || !teams || teams.length === 0) {
       return res.status(400).json({ message: "Ungültige Turnierdaten" });
     }
@@ -52,7 +55,7 @@ router.post("/", authenticateToken, async (req, res) => {
     // Neues Turnier speichern
     const tournament = new Tournament({
       name,
-      createdBy: req.user.id,
+      createdBy: req.user.userId, // ✅ korrekt, damit Turniere an User gebunden sind
       teams: createdTeams.map((t) => t._id),
       groups,
       playoffs: { rounds: [] },
@@ -65,6 +68,7 @@ router.post("/", authenticateToken, async (req, res) => {
       "teams groups.teams groups.matches.team1 groups.matches.team2"
     );
 
+    console.log("✅ Turnier erfolgreich erstellt:", tournament._id);
     res.status(201).json(tournament);
   } catch (err) {
     console.error("❌ Fehler beim Erstellen des Turniers:", err);
@@ -77,7 +81,9 @@ router.post("/", authenticateToken, async (req, res) => {
 //
 router.get("/", authenticateToken, async (req, res) => {
   try {
-    const tournaments = await Tournament.find({ createdBy: req.user.id })
+    console.log("➡️ Lade Turniere für User:", req.user);
+
+    const tournaments = await Tournament.find({ createdBy: req.user.userId })
       .populate("teams")
       .populate("groups.teams")
       .populate("groups.matches.team1")
@@ -160,12 +166,11 @@ router.post("/:id/matches", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Ungültiges Match" });
     }
 
-    // Match-Ergebnis setzen
+    // Ergebnis setzen
     match.score1 = score1;
     match.score2 = score2;
     match.played = true;
 
-    // Teams updaten
     const team1 = await Team.findById(match.team1);
     const team2 = await Team.findById(match.team2);
 
