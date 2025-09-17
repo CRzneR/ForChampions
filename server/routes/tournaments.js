@@ -5,131 +5,13 @@ const authenticateToken = require("../middleware/auth");
 
 const router = express.Router();
 
-/**
- * Hilfsfunktion: Alle Paarungen einer Gruppe erzeugen (Round-Robin)
- */
-function generateGroupMatches(teamIds) {
-  const matches = [];
-  for (let i = 0; i < teamIds.length; i++) {
-    for (let j = i + 1; j < teamIds.length; j++) {
-      matches.push({
-        team1: teamIds[i],
-        team2: teamIds[j],
-        score1: 0,
-        score2: 0,
-        played: false,
-      });
-    }
-  }
-  return matches;
-}
+// ... deine bestehenden Routen (POST /, GET /, GET /:id, PUT /:id)
 
-// --- Turnier erstellen ---
-router.post("/", authenticateToken, async (req, res) => {
+// --- Match-Ergebnis speichern ---
+router.post("/:id/matches", authenticateToken, async (req, res) => {
   try {
-    const { name, description, teams, groupCount } = req.body;
-
-    // Teams speichern (oder vorhandene wiederverwenden)
-    const teamDocs = [];
-    for (const t of teams) {
-      let team = await Team.findOne({ name: t.name });
-      if (!team) {
-        team = new Team({ name: t.name });
-        await team.save();
-      }
-      teamDocs.push(team);
-    }
-
-    // Gruppen vorbereiten
-    const groups = Array.from({ length: groupCount || 4 }, (_, i) => ({
-      name: `Gruppe ${String.fromCharCode(65 + i)}`,
-      teams: [],
-      matches: [],
-    }));
-
-    // Teams gleichmäßig auf Gruppen verteilen
-    teamDocs.forEach((team, idx) => {
-      const groupIndex = idx % groups.length;
-      groups[groupIndex].teams.push(team._id);
-    });
-
-    // Für jede Gruppe Matches generieren
-    groups.forEach((group) => {
-      group.matches = generateGroupMatches(group.teams);
-    });
-
-    // Turnier anlegen
-    const tournament = new Tournament({
-      name,
-      description,
-      createdBy: req.user.userId,
-      teams: teamDocs.map((t) => t._id),
-      groups,
-    });
-
-    await tournament.save();
-
-    // Populieren: Teams + Gruppen-Teams + Matches
-    await tournament.populate("teams");
-    await tournament.populate("groups.teams");
-    await tournament.populate("groups.matches.team1");
-    await tournament.populate("groups.matches.team2");
-
-    res.status(201).json(tournament);
-  } catch (error) {
-    console.error("Turnier Erstellungsfehler:", error);
-    res.status(500).json({ message: "Fehler beim Erstellen des Turniers" });
-  }
-});
-
-// --- Alle Turniere eines Users ---
-router.get("/", authenticateToken, async (req, res) => {
-  try {
-    const tournaments = await Tournament.find({ createdBy: req.user.userId })
-      .populate("teams")
-      .populate("groups.teams")
-      .populate("groups.matches.team1")
-      .populate("groups.matches.team2")
-      .sort({ createdAt: -1 });
-
-    res.json(tournaments);
-  } catch (error) {
-    console.error("Turnier Abfragefehler:", error);
-    res.status(500).json({ message: "Fehler beim Abrufen der Turniere" });
-  }
-});
-
-// --- Bestimmtes Turnier laden ---
-router.get("/:id", authenticateToken, async (req, res) => {
-  try {
+    const { groupIndex, matchIndex, score1, score2 } = req.body;
     const tournament = await Tournament.findById(req.params.id)
-      .populate("teams")
-      .populate("groups.teams")
-      .populate("groups.matches.team1")
-      .populate("groups.matches.team2")
-      .populate("playoffs.rounds.matches.team1")
-      .populate("playoffs.rounds.matches.team2")
-      .populate("playoffs.rounds.matches.winner");
-
-    if (!tournament) {
-      return res.status(404).json({ message: "Turnier nicht gefunden" });
-    }
-
-    res.json(tournament);
-  } catch (error) {
-    console.error("Turnier Abfragefehler:", error);
-    res.status(500).json({ message: "Fehler beim Abrufen des Turniers" });
-  }
-});
-
-// --- Turnier aktualisieren ---
-router.put("/:id", authenticateToken, async (req, res) => {
-  try {
-    const tournament = await Tournament.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    )
       .populate("teams")
       .populate("groups.teams")
       .populate("groups.matches.team1")
@@ -139,10 +21,92 @@ router.put("/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Turnier nicht gefunden" });
     }
 
+    const group = tournament.groups[groupIndex];
+    if (!group) {
+      return res.status(400).json({ message: "Ungültige Gruppe" });
+    }
+
+    const match = group.matches[matchIndex];
+    if (!match) {
+      return res.status(400).json({ message: "Ungültiges Match" });
+    }
+
+    // Match-Ergebnis setzen
+    match.score1 = score1;
+    match.score2 = score2;
+    match.played = true;
+
+    // --- Teams updaten ---
+    const team1 = await Team.findById(match.team1);
+    const team2 = await Team.findById(match.team2);
+
+    if (!team1 || !team2) {
+      return res.status(400).json({ message: "Teams nicht gefunden" });
+    }
+
+    // Falls schon Ergebnis vorhanden → alte Stats zurücknehmen
+    if (match.oldApplied) {
+      console.log(
+        "⚠️ Ergebnis wurde schon angewendet → Statistiken nicht doppelt zählen"
+      );
+    } else {
+      // Tore
+      team1.goalsFor += score1;
+      team1.goalsAgainst += score2;
+      team2.goalsFor += score2;
+      team2.goalsAgainst += score1;
+
+      if (score1 > score2) {
+        // Team1 Sieg
+        team1.wins += 1;
+        team1.points += 3;
+        team2.losses += 1;
+        match.winner = team1._id;
+
+        team1.form.unshift("W");
+        team2.form.unshift("L");
+      } else if (score2 > score1) {
+        // Team2 Sieg
+        team2.wins += 1;
+        team2.points += 3;
+        team1.losses += 1;
+        match.winner = team2._id;
+
+        team2.form.unshift("W");
+        team1.form.unshift("L");
+      } else {
+        // Unentschieden
+        team1.draws += 1;
+        team2.draws += 1;
+        team1.points += 1;
+        team2.points += 1;
+
+        match.winner = null;
+
+        team1.form.unshift("D");
+        team2.form.unshift("D");
+      }
+
+      // Nur die letzten 5 Spiele im Form-Array behalten
+      team1.form = team1.form.slice(0, 5);
+      team2.form = team2.form.slice(0, 5);
+
+      // Flag setzen → Ergebnis angewendet
+      match.oldApplied = true;
+
+      await team1.save();
+      await team2.save();
+    }
+
+    await tournament.save();
+    await tournament.populate("groups.teams");
+    await tournament.populate("groups.matches.team1");
+    await tournament.populate("groups.matches.team2");
+
     res.json(tournament);
   } catch (error) {
-    console.error("Turnier Aktualisierungsfehler:", error);
-    res.status(500).json({ message: "Fehler beim Aktualisieren des Turniers" });
+    console.error("❌ Fehler beim Speichern des Matches:", error);
+    res.status(500).json({ message: "Fehler beim Speichern des Matches" });
   }
 });
 

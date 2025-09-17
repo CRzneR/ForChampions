@@ -1,6 +1,6 @@
 // client/js/dashboard.js – Dashboard-Logik mit DB-Anbindung
 
-import { loadTournament } from "./api.js";
+import { refreshTournament, getCurrentTournament } from "./api.js";
 
 // Lokale Referenz auf das aktuelle Turnier
 let activeTournament = null;
@@ -10,7 +10,7 @@ async function initDashboard() {
   await updateDashboard();
 }
 
-// 🔹 Turnierinfo aktualisieren
+// Aktualisiert die Turnierinfo
 function updateTournamentInfo() {
   const infoContent = document.getElementById("tournament-info-content");
 
@@ -48,26 +48,26 @@ function updateTournamentInfo() {
   `;
 }
 
-// 🔹 Nächste Spiele anzeigen (direkt aus DB)
+// Zeigt die nächsten Spiele
 function generateCurrentMatches() {
   const container = document.getElementById("current-matches-content");
 
-  if (!activeTournament || !activeTournament.groups?.length) {
+  if (!activeTournament || !activeTournament.groups) {
     container.innerHTML = `<p class="text-gray-400 text-center py-4">Keine anstehenden Spiele</p>`;
     return;
   }
 
   const upcomingMatches = [];
 
-  activeTournament.groups.forEach((group, gIdx) => {
-    group.matches.forEach((match, mIdx) => {
-      if (!match.played) {
+  activeTournament.groups.forEach((group, groupIndex) => {
+    (group.matches || []).forEach((match, matchIndex) => {
+      if (match.score1 == null || match.score2 == null) {
         upcomingMatches.push({
-          groupIndex: gIdx,
-          matchIndex: mIdx,
+          groupIndex,
+          matchIndex,
           groupName: group.name,
-          home: match.team1,
-          away: match.team2,
+          team1: match.team1?.name || "?",
+          team2: match.team2?.name || "?",
         });
       }
     });
@@ -89,22 +89,16 @@ function generateCurrentMatches() {
           <div class="flex justify-between items-center mb-1">
             <span class="text-xs text-gray-400">${match.groupName}</span>
             <button 
-              onclick="navigateToMatch('${match.groupIndex}', ${
-            match.matchIndex
-          })"
+              onclick="navigateToMatch('${match.groupIndex}', ${match.matchIndex})"
               class="text-xs text-accent hover:underline"
             >
               Zum Spiel
             </button>
           </div>
           <div class="flex items-center justify-between">
-            <span class="font-medium text-white">${
-              match.home?.name || "?"
-            }</span>
+            <span class="font-medium text-white">${match.team1}</span>
             <span class="mx-2 text-gray-300">vs</span>
-            <span class="font-medium text-white">${
-              match.away?.name || "?"
-            }</span>
+            <span class="font-medium text-white">${match.team2}</span>
           </div>
         </div>
       `
@@ -113,22 +107,28 @@ function generateCurrentMatches() {
     </div>
     ${
       upcomingMatches.length > 5
-        ? `<div class="mt-3 text-center">
-            <button data-tab="schedule" class="text-sm text-accent hover:underline">
-              + ${upcomingMatches.length - 5} weitere anzeigen
-            </button>
-          </div>`
+        ? `<div class="mt-3 text-center"><button data-tab="schedule" class="text-sm text-accent hover:underline">+ ${
+            upcomingMatches.length - 5
+          } weitere anzeigen</button></div>`
         : ""
     }
   `;
 }
 
-// 🔹 Top Teams aus allen Gruppen
+// Zeigt die Top Teams
 function generateTopTeams() {
   const container = document.getElementById("top-teams-content");
 
-  if (!activeTournament || !activeTournament.groups?.length) {
-    container.innerHTML = `<p class="text-gray-400 text-center py-4">Kein aktives Turnier</p>`;
+  if (
+    !activeTournament ||
+    !activeTournament.groups ||
+    activeTournament.playoffSpots <= 0
+  ) {
+    container.innerHTML = `<p class="text-gray-400 text-center py-4">${
+      activeTournament?.playoffSpots <= 0
+        ? "Keine Playoff-Plätze definiert"
+        : "Kein aktives Turnier"
+    }</p>`;
     return;
   }
 
@@ -137,14 +137,21 @@ function generateTopTeams() {
     const sortedTeams = [...group.teams].sort((a, b) => {
       if ((b.points || 0) !== (a.points || 0))
         return (b.points || 0) - (a.points || 0);
-      return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
+      const diffA = (a.goalsFor || 0) - (a.goalsAgainst || 0);
+      const diffB = (b.goalsFor || 0) - (b.goalsAgainst || 0);
+      return diffB - diffA;
     });
 
-    const playoffTeams = sortedTeams.slice(
-      0,
-      activeTournament.playoffSpots || 0
-    );
+    const playoffTeams = sortedTeams.slice(0, activeTournament.playoffSpots);
     allTeams = [...allTeams, ...playoffTeams];
+  });
+
+  allTeams.sort((a, b) => {
+    if ((b.points || 0) !== (a.points || 0))
+      return (b.points || 0) - (a.points || 0);
+    const diffA = (a.goalsFor || 0) - (a.goalsAgainst || 0);
+    const diffB = (b.goalsFor || 0) - (b.goalsAgainst || 0);
+    return diffB - diffA;
   });
 
   if (allTeams.length === 0) {
@@ -159,8 +166,8 @@ function generateTopTeams() {
           <tr>
             <th class="px-3 py-2 text-left text-xs text-gray-300">Team</th>
             <th class="px-3 py-2 text-center text-xs text-gray-300">S</th>
-            <th class="px-3 py-2 text-center text-xs text-gray-300">N</th>
             <th class="px-3 py-2 text-center text-xs text-gray-300">U</th>
+            <th class="px-3 py-2 text-center text-xs text-gray-300">N</th>
             <th class="px-3 py-2 text-center text-xs text-gray-300">Tore</th>
             <th class="px-3 py-2 text-center text-xs text-gray-300">Pkt.</th>
             <th class="px-3 py-2 text-center text-xs text-gray-300">Form</th>
@@ -177,11 +184,11 @@ function generateTopTeams() {
               <td class="px-3 py-2 text-center text-green-400">${
                 team.wins || 0
               }</td>
-              <td class="px-3 py-2 text-center text-red-400">${
-                team.losses || 0
-              }</td>
               <td class="px-3 py-2 text-center text-yellow-400">${
                 team.draws || 0
+              }</td>
+              <td class="px-3 py-2 text-center text-red-400">${
+                team.losses || 0
               }</td>
               <td class="px-3 py-2 text-gray-300">${team.goalsFor || 0}:${
                 team.goalsAgainst || 0
@@ -195,8 +202,8 @@ function generateTopTeams() {
                     .map((result) => {
                       const colors = {
                         W: "bg-green-600 text-white",
-                        L: "bg-red-600 text-white",
                         D: "bg-yellow-500 text-gray-900",
+                        L: "bg-red-600 text-white",
                       };
                       return `<span class="w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${
                         colors[result] || "bg-gray-600"
@@ -215,17 +222,13 @@ function generateTopTeams() {
   `;
 }
 
-// 🔹 Gruppenübersicht fürs Dashboard
+// Generiert die Gruppenansicht (kompakte Version fürs Dashboard)
 function generateDashboardGroups() {
   const container = document.getElementById("dashboard-groups-container");
   const infoElement = document.getElementById("dashboard-groups-info");
 
-  if (!activeTournament || !activeTournament.groups?.length) {
-    container.innerHTML = `
-      <div class="col-span-full text-center py-8 text-gray-400">
-        Kein aktives Turnier oder keine Gruppen vorhanden
-      </div>
-    `;
+  if (!activeTournament || !activeTournament.groups) {
+    container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-400">Kein aktives Turnier oder keine Gruppen vorhanden</div>`;
     infoElement.textContent = "Kein aktives Turnier";
     return;
   }
@@ -234,11 +237,7 @@ function generateDashboardGroups() {
   container.innerHTML = "";
 
   activeTournament.groups.forEach((group) => {
-    const sortedTeams = [...group.teams].sort((a, b) => {
-      if ((b.points || 0) !== (a.points || 0))
-        return (b.points || 0) - (a.points || 0);
-      return b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst);
-    });
+    group.teams.sort((a, b) => (b.points || 0) - (a.points || 0));
 
     const groupElement = document.createElement("div");
     groupElement.className =
@@ -248,21 +247,21 @@ function generateDashboardGroups() {
         <h3 class="font-bold text-white">${group.name}</h3>
       </div>
       <div class="divide-y divide-gray-800">
-        ${sortedTeams
+        ${group.teams
           .map(
             (team, index) => `
           <div class="px-3 py-2 flex items-center justify-between ${
-            index < (activeTournament.playoffSpots || 0)
+            index < activeTournament.playoffSpots
               ? "bg-green-900 bg-opacity-20"
               : ""
           }">
             <span class="text-sm font-medium ${
-              index < (activeTournament.playoffSpots || 0)
+              index < activeTournament.playoffSpots
                 ? "text-green-400"
                 : "text-white"
             }">${team.name}</span>
             <span class="text-xs font-bold ${
-              index < (activeTournament.playoffSpots || 0)
+              index < activeTournament.playoffSpots
                 ? "text-green-400"
                 : "text-gray-300"
             }">${team.points || 0}</span>
@@ -276,7 +275,7 @@ function generateDashboardGroups() {
   });
 }
 
-// 🔹 Navigation zu einem Spiel (öffnet Tab Spielplan)
+// Navigation zu einem Spiel
 window.navigateToMatch = function (groupIndex, matchIndex) {
   document.querySelector('[data-tab="schedule"]').click();
 
@@ -296,13 +295,11 @@ window.navigateToMatch = function (groupIndex, matchIndex) {
   }, 500);
 };
 
-// 🔹 Dashboard aktualisieren (immer frische Daten laden)
+// Dashboard updaten → immer mit DB
 export async function updateDashboard() {
   try {
-    const tournamentId = localStorage.getItem("currentTournamentId");
-    if (!tournamentId) return;
-
-    activeTournament = await loadTournament(tournamentId);
+    await refreshTournament(); // 🔄 DB ziehen
+    activeTournament = getCurrentTournament();
 
     updateTournamentInfo();
     generateDashboardGroups();

@@ -1,9 +1,12 @@
-// schedule.js – Spielplan-Logik mit Speicherung in DB
+// client/js/schedule.js – Spielplan-Logik mit Speicherung in DB
 
 import { generateGroups } from "./groups.js";
-import { updateDashboard } from "./dashboard.js";
 import { showAlert } from "./ui-alert.js";
-import { saveMatchResult, getCurrentTournament } from "./api.js"; // API-Call + Tournament-Getter
+import {
+  saveMatchResult,
+  getCurrentTournament,
+  refreshTournament,
+} from "./api.js";
 
 /**
  * Rendert die Spielplan-Ansicht mit Eingabefeldern für Ergebnisse.
@@ -137,20 +140,19 @@ window.saveMatchResultHandler = async function (
   }
 
   try {
-    // 🔹 Ergebnis in DB speichern
-    const updatedTournament = await saveMatchResult(tournamentId, {
+    await saveMatchResult(tournamentId, {
       groupIndex,
       matchIndex,
       score1: homeGoals,
       score2: awayGoals,
     });
 
-    // Lokale Daten aktualisieren
-    window.tournamentData = updatedTournament;
+    // 🔄 Turnier neu laden (DB → UI)
+    await refreshTournament();
 
     // UI neu aufbauen
     generateGroups();
-    updateDashboard();
+    generateSchedule();
 
     showAlert("Ergebnis gespeichert!", "success");
   } catch (err) {

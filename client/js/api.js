@@ -1,6 +1,6 @@
 // client/js/api.js
 
-import { updateDashboard } from "./dashboard.js"; // ✅ Import ergänzt
+import { updateDashboard } from "./dashboard.js";
 
 // Globale Variablen für den aktuellen Zustand
 let currentTournament = null;
@@ -28,9 +28,7 @@ export async function createTournament(tournamentData) {
     if (!response.ok) throw new Error("Fehler beim Erstellen des Turniers");
 
     const tournament = await response.json();
-    currentTournament = tournament;
-    window.tournamentData = tournament; // ✅ wichtig
-    localStorage.setItem("currentTournamentId", tournament._id);
+    setTournament(tournament);
     return tournament;
   } catch (error) {
     console.error("Fehler:", error);
@@ -45,18 +43,14 @@ export async function loadTournament(tournamentId) {
     const response = await fetch(
       `${API_BASE_URL}/api/tournaments/${tournamentId}`,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       }
     );
 
     if (!response.ok) throw new Error("Fehler beim Laden des Turniers");
 
     const tournament = await response.json();
-    currentTournament = tournament;
-    window.tournamentData = tournament; // ✅
-    localStorage.setItem("currentTournamentId", tournament._id);
+    setTournament(tournament);
     return tournament;
   } catch (error) {
     console.error("Fehler:", error);
@@ -69,13 +63,10 @@ export async function loadUserTournaments() {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) throw new Error("Fehler beim Laden der Turniere");
-
     return await response.json();
   } catch (error) {
     console.error("Fehler:", error);
@@ -101,10 +92,9 @@ export async function saveMatchResult(tournamentId, matchData) {
 
     if (!response.ok) throw new Error("Fehler beim Speichern des Matches");
 
+    // Server gibt Turnier zurück
     const tournament = await response.json();
-    currentTournament = tournament;
-    window.tournamentData = tournament; // ✅
-    localStorage.setItem("currentTournamentId", tournament._id);
+    setTournament(tournament);
     return tournament;
   } catch (error) {
     console.error("Fehler:", error);
@@ -132,9 +122,7 @@ export async function savePlayoffMatchResult(tournamentId, matchData) {
       throw new Error("Fehler beim Speichern des Playoff-Matches");
 
     const tournament = await response.json();
-    currentTournament = tournament;
-    window.tournamentData = tournament; // ✅
-    localStorage.setItem("currentTournamentId", tournament._id);
+    setTournament(tournament);
     return tournament;
   } catch (error) {
     console.error("Fehler:", error);
@@ -151,30 +139,39 @@ export async function initializeApp() {
     currentUser = user;
 
     try {
-      // Hole alle Turniere des Users
       const tournaments = await loadUserTournaments();
-
       if (tournaments.length > 0) {
-        // ID aus LocalStorage holen oder erstes Turnier nehmen
         let tournamentId = localStorage.getItem("currentTournamentId");
-        if (!tournamentId) {
-          tournamentId = tournaments[0]._id;
-        }
+        if (!tournamentId) tournamentId = tournaments[0]._id;
 
-        // Immer frische Daten aus der DB holen
-        currentTournament = await loadTournament(tournamentId);
+        await loadTournament(tournamentId); // frische Daten laden
       } else {
         console.log("ℹ️ Keine Turniere gefunden.");
         localStorage.removeItem("currentTournamentId");
-        currentTournament = null;
-        window.tournamentData = null;
+        setTournament(null);
       }
 
-      // Dashboard aktualisieren
       updateDashboard();
     } catch (error) {
       console.error("Fehler beim Initialisieren:", error);
     }
+  }
+}
+
+// 🔹 Turnier frisch aus DB laden und global setzen
+export async function refreshTournament() {
+  if (!currentTournament?._id) return null;
+  const updated = await loadTournament(currentTournament._id);
+  updateDashboard();
+  return updated;
+}
+
+// 🔹 Setter für Tournament (zentral)
+function setTournament(tournament) {
+  currentTournament = tournament;
+  window.tournamentData = tournament;
+  if (tournament?._id) {
+    localStorage.setItem("currentTournamentId", tournament._id);
   }
 }
 
