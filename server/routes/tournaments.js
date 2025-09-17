@@ -1,4 +1,13 @@
+const express = require("express");
+const { Tournament } = require("../models/Tournament");
+const { Team } = require("../models/Team");
+const authenticateToken = require("../middleware/auth");
+
+const router = express.Router(); // <-- das hat gefehlt!
+
+//
 // --- Neues Turnier erstellen ---
+//
 router.post("/", authenticateToken, async (req, res) => {
   try {
     const { name, groupCount, playoffSpots, teams } = req.body;
@@ -10,7 +19,7 @@ router.post("/", authenticateToken, async (req, res) => {
       return res.status(400).json({ message: "Ungültige Turnierdaten" });
     }
 
-    // Neues Turnier anlegen (erstmal leer speichern, damit wir die ID haben)
+    // Neues Turnier anlegen
     const tournament = new Tournament({
       name,
       createdBy: req.user.userId,
@@ -22,7 +31,7 @@ router.post("/", authenticateToken, async (req, res) => {
     });
     await tournament.save();
 
-    // Teams in DB anlegen und mit Turnier verknüpfen
+    // Teams anlegen
     const createdTeams = await Team.insertMany(
       teams.map((t) => ({
         name: t.name,
@@ -57,7 +66,7 @@ router.post("/", authenticateToken, async (req, res) => {
       });
     }
 
-    // Turnier-Objekt updaten
+    // Turnier updaten
     tournament.teams = createdTeams.map((t) => t._id);
     tournament.groups = groups;
 
@@ -73,3 +82,9 @@ router.post("/", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Fehler beim Erstellen des Turniers" });
   }
 });
+
+//
+// --- Weitere Routen (get, put, matches) hier unverändert ---
+//
+
+module.exports = router;
