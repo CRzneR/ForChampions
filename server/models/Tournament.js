@@ -1,3 +1,4 @@
+// server/models/Tournament.js
 const mongoose = require("mongoose");
 
 // --- Match Schema (Teams als ObjectId-Refs) ---
@@ -13,10 +14,23 @@ const matchSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// --- Group-Team Schema (Team + Stats nur für dieses Turnier) ---
+const groupTeamSchema = new mongoose.Schema({
+  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team", required: true },
+  wins: { type: Number, default: 0 },
+  losses: { type: Number, default: 0 },
+  draws: { type: Number, default: 0 },
+  goalsFor: { type: Number, default: 0 },
+  goalsAgainst: { type: Number, default: 0 },
+  points: { type: Number, default: 0 },
+  goalDifference: { type: Number, default: 0 },
+  form: [{ type: String }], // ["W", "D", "L"]
+});
+
 // --- Group Schema ---
 const groupSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Team" }],
+  teams: [groupTeamSchema],
   matches: [matchSchema],
 });
 
@@ -35,7 +49,7 @@ const tournamentSchema = new mongoose.Schema(
     name: { type: String, required: true },
     description: { type: String },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Team" }], // refs
+    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Team" }], // alle Teilnehmer
     groups: [groupSchema],
     playoffs: playoffSchema,
   },

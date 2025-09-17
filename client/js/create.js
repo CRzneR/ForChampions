@@ -6,6 +6,19 @@ import { updateDashboard } from "./dashboard.js";
 import { showAlert } from "./ui-alert.js";
 import { createTournament } from "./api.js"; // ✅ API-Call einbinden
 
+// 🔹 Globales Objekt initialisieren (falls noch nicht vorhanden)
+if (!window.tournamentData) {
+  window.tournamentData = {
+    name: "",
+    description: "",
+    teams: [],
+    groups: [],
+    groupCount: 0,
+    playoffSpots: 0,
+    teamNames: [],
+  };
+}
+
 export function initCreateModule() {
   const root = document.getElementById("create-content");
   if (!root) return;
@@ -77,7 +90,7 @@ function prepareTeamNameInput() {
     return;
   }
 
-  // Daten im globalen Objekt zwischenspeichern
+  // 🔹 Daten im globalen Objekt zwischenspeichern
   window.tournamentData.name = name;
   window.tournamentData.groupCount = groupCount;
   window.tournamentData.playoffSpots = playoffSpots;
