@@ -60,31 +60,22 @@ function generateCurrentMatches() {
   }
 
   const upcomingMatches = [];
+
   activeTournament.groups.forEach((group, groupIndex) => {
-    const matchdays = generateMatchdays(group.teams);
+    group.matches?.forEach((match, matchIndex) => {
+      const isPlayed = match.homeGoals != null && match.awayGoals != null;
 
-    matchdays.forEach((matchday, dayIndex) => {
-      matchday.forEach((match, matchIndex) => {
-        const matchId = `group-${groupIndex}-matchday-${dayIndex}-match-${matchIndex}`;
-        const isPlayed = activeTournament.matches?.some(
-          (m) => m.id === matchId
-        );
-
-        if (!isPlayed) {
-          upcomingMatches.push({
-            groupIndex,
-            dayIndex,
-            matchIndex,
-            match,
-            matchday: dayIndex + 1,
-            groupName: group.name,
-          });
-        }
-      });
+      if (!isPlayed) {
+        upcomingMatches.push({
+          groupIndex,
+          matchIndex,
+          match,
+          groupName: group.name,
+        });
+      }
     });
   });
 
-  upcomingMatches.sort((a, b) => a.dayIndex - b.dayIndex);
   const nextMatches = upcomingMatches.slice(0, 5);
 
   if (nextMatches.length === 0) {
@@ -98,21 +89,25 @@ function generateCurrentMatches() {
     <div class="space-y-3">
       ${nextMatches
         .map(
-          (match) => `
+          (m) => `
         <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-accent transition-colors">
           <div class="flex justify-between items-center mb-1">
-            <span class="text-xs text-gray-400">${match.groupName} - Spieltag ${match.matchday}</span>
+            <span class="text-xs text-gray-400">${m.groupName}</span>
             <button 
-              onclick="navigateToMatch('${match.groupIndex}', ${match.dayIndex}, ${match.matchIndex})"
+              onclick="navigateToMatch(${m.groupIndex}, ${m.matchIndex})"
               class="text-xs text-accent hover:underline"
             >
               Zum Spiel
             </button>
           </div>
           <div class="flex items-center justify-between">
-            <span class="font-medium text-white">${match.match.home.name}</span>
+            <span class="font-medium text-white">${
+              m.match.team1?.name || "?"
+            }</span>
             <span class="mx-2 text-gray-300">vs</span>
-            <span class="font-medium text-white">${match.match.away.name}</span>
+            <span class="font-medium text-white">${
+              m.match.team2?.name || "?"
+            }</span>
           </div>
         </div>
       `
@@ -210,7 +205,7 @@ function generateTopTeams() {
               }</td>
               <td class="px-3 py-2">
                 <div class="flex space-x-1">
-                  ${team.form
+                  ${(team.form || [])
                     .map((result) => {
                       const colors = {
                         W: "bg-green-600 text-white",
@@ -295,11 +290,11 @@ function generateDashboardGroups() {
 }
 
 // Navigation zu einem Spiel
-window.navigateToMatch = function (groupIndex, dayIndex, matchIndex) {
+window.navigateToMatch = function (groupIndex, matchIndex) {
   document.querySelector('[data-tab="schedule"]').click();
 
   setTimeout(() => {
-    const matchId = `group-${groupIndex}-matchday-${dayIndex}-match-${matchIndex}`;
+    const matchId = `g${groupIndex}-m${matchIndex}`;
     const matchElement = document.getElementById(`${matchId}-home`);
     if (matchElement) {
       matchElement.scrollIntoView({ behavior: "smooth", block: "center" });
