@@ -18,24 +18,36 @@ router.post("/", authenticateToken, async (req, res) => {
         team = new Team({ name: t.name });
         await team.save();
       }
-      teamDocs.push(team._id);
+      teamDocs.push(team);
     }
+
+    // Gruppen vorbereiten
+    const groups = Array.from({ length: groupCount || 4 }, (_, i) => ({
+      name: `Gruppe ${String.fromCharCode(65 + i)}`,
+      teams: [],
+      matches: [],
+    }));
+
+    // Teams gleichmäßig auf Gruppen verteilen
+    teamDocs.forEach((team, idx) => {
+      const groupIndex = idx % groups.length;
+      groups[groupIndex].teams.push(team._id);
+    });
 
     // Turnier anlegen
     const tournament = new Tournament({
       name,
       description,
       createdBy: req.user.userId,
-      teams: teamDocs,
-      groups: Array.from({ length: groupCount || 4 }, (_, i) => ({
-        name: `Gruppe ${String.fromCharCode(65 + i)}`,
-        teams: [],
-        matches: [],
-      })),
+      teams: teamDocs.map((t) => t._id),
+      groups,
     });
 
     await tournament.save();
+
+    // Populieren: Teams + Gruppen-Teams
     await tournament.populate("teams");
+    await tournament.populate("groups.teams");
 
     res.status(201).json(tournament);
   } catch (error) {
@@ -49,6 +61,7 @@ router.get("/", authenticateToken, async (req, res) => {
   try {
     const tournaments = await Tournament.find({ createdBy: req.user.userId })
       .populate("teams")
+      .populate("groups.teams")
       .sort({ createdAt: -1 });
 
     res.json(tournaments);
@@ -88,7 +101,9 @@ router.put("/:id", authenticateToken, async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate("teams");
+    )
+      .populate("teams")
+      .populate("groups.teams");
 
     if (!tournament) {
       return res.status(404).json({ message: "Turnier nicht gefunden" });
