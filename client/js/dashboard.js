@@ -1,6 +1,5 @@
 // client/js/dashboard.js – Dashboard-Logik mit DB-Anbindung
 
-import { generateMatchdays } from "./schedule.js";
 import { loadTournament } from "./api.js";
 
 // Lokale Referenz auf das aktuelle Turnier
