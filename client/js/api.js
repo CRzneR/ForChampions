@@ -7,7 +7,7 @@ let currentTournament = null;
 let currentUser = null;
 
 // ✅ API-Basis-URL dynamisch – funktioniert lokal & bei Render
-const API_BASE_URL = window.location.origin;
+const API_BASE_URL = "/api";
 
 // 🔹 Turnier erstellen
 export async function createTournament(tournamentData) {

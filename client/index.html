@@ -450,85 +450,112 @@
     <script>
       lucide.createIcons();
 
-      // Server-URL
-      // API Base URL = gleiche Domain
-      const API_BASE_URL = window.location.origin;
+      const loginContainer = document.getElementById("loginContainer");
+      const mainApp = document.getElementById("mainApp");
+      const loginTab = document.getElementById("loginTab");
+      const registerTab = document.getElementById("registerTab");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const loginFormElement = document.getElementById("loginFormElement");
+      const registerFormElement = document.getElementById(
+        "registerFormElement"
+      );
+      const loginError = document.getElementById("loginError");
+      const registerError = document.getElementById("registerError");
+      const loginErrorText = document.getElementById("loginErrorText");
+      const registerErrorText = document.getElementById("registerErrorText");
+      const logoutButton = document.getElementById("logoutButton");
+      const usernameDisplay = document.getElementById("usernameDisplay");
 
-      // Login-Formular
-      if (loginFormElement) {
-        loginFormElement.addEventListener("submit", async (e) => {
-          e.preventDefault();
+      // ✅ API-Basis
+      const API_BASE_URL = "/api";
 
-          const email = document.getElementById("loginEmail").value;
-          const password = document.getElementById("loginPassword").value;
+      function showMainApp(user) {
+        loginContainer.classList.add("hidden");
+        mainApp.classList.remove("hidden");
+        usernameDisplay.textContent = user.username;
+      }
 
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email, password }),
-            });
+      // Tabs
+      loginTab.addEventListener("click", () => {
+        loginTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+        registerTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+        loginForm.classList.remove("hidden");
+        registerForm.classList.add("hidden");
+      });
 
-            const data = await response.json();
+      registerTab.addEventListener("click", () => {
+        registerTab.classList.add("text-[#CA5818]", "border-[#CA5818]");
+        loginTab.classList.remove("text-[#CA5818]", "border-[#CA5818]");
+        registerForm.classList.remove("hidden");
+        loginForm.classList.add("hidden");
+      });
 
-            if (response.ok) {
-              localStorage.setItem("token", data.token);
-              localStorage.setItem("user", JSON.stringify(data.user));
-              showMainApp(data.user);
-            } else {
-              loginErrorText.textContent = data.message;
-              loginError.classList.remove("hidden");
-            }
-          } catch (error) {
-            loginErrorText.textContent =
-              "Netzwerkfehler. Bitte versuche es später erneut.";
+      // Login
+      loginFormElement.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            showMainApp(data.user);
+          } else {
+            loginErrorText.textContent = data.message;
             loginError.classList.remove("hidden");
           }
-        });
-      }
+        } catch (err) {
+          loginErrorText.textContent = "Netzwerkfehler";
+          loginError.classList.remove("hidden");
+        }
+      });
 
-      // Registrierungs-Formular
-      if (registerFormElement) {
-        registerFormElement.addEventListener("submit", async (e) => {
-          e.preventDefault();
+      // Register
+      registerFormElement.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const username = document.getElementById("registerUsername").value;
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        const confirmPassword = document.getElementById(
+          "registerConfirmPassword"
+        ).value;
 
-          const username = document.getElementById("registerUsername").value;
-          const email = document.getElementById("registerEmail").value;
-          const password = document.getElementById("registerPassword").value;
-          const confirmPassword = document.getElementById(
-            "registerConfirmPassword"
-          ).value;
+        if (password !== confirmPassword) {
+          registerErrorText.textContent = "Passwörter stimmen nicht überein";
+          registerError.classList.remove("hidden");
+          return;
+        }
 
-          if (password !== confirmPassword) {
-            registerErrorText.textContent = "Passwörter stimmen nicht überein";
-            registerError.classList.remove("hidden");
-            return;
-          }
+        try {
+          const res = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password }),
+          });
+          const data = await res.json();
 
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ username, email, password }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-              localStorage.setItem("token", data.token);
-              localStorage.setItem("user", JSON.stringify(data.user));
-              showMainApp(data.user);
-            } else {
-              registerErrorText.textContent = data.message;
-              registerError.classList.remove("hidden");
-            }
-          } catch (error) {
-            registerErrorText.textContent =
-              "Netzwerkfehler. Bitte versuche es später erneut.";
+          if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            showMainApp(data.user);
+          } else {
+            registerErrorText.textContent = data.message;
             registerError.classList.remove("hidden");
           }
-        });
-      }
+        } catch (err) {
+          registerErrorText.textContent = "Netzwerkfehler";
+          registerError.classList.remove("hidden");
+        }
+      });
     </script>
   </body>
 </html>
