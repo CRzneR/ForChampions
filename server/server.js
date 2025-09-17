@@ -5,13 +5,14 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 
+// --- Express App ---
 const app = express();
 
 // --- DB Verbindung ---
 connectDB();
 
 // --- Middleware ---
-app.use(cors());
+app.use(cors()); // ✅ einfach halten, da gleiche Domain
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -39,8 +40,21 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use(express.static(path.join(__dirname, "../client")));
+// --- Statische Dateien (Frontend) ---
+app.use(
+  express.static(path.join(__dirname, "../client"), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      }
+      if (filePath.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      }
+    },
+  })
+);
 
+// --- SPA Fallback ---
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api")) {
     return next(); // API-Routen nicht überschreiben
@@ -51,5 +65,5 @@ app.get("*", (req, res, next) => {
 // --- Server Start ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server läuft auf Port ${PORT}`);
+  console.log(`✅ Server läuft auf http://localhost:${PORT}`);
 });

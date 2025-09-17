@@ -2,7 +2,7 @@
   "name": "for-cham",
   "version": "1.0.0",
   "description": "Tournament management application",
-  "main": "server.js",
+  "main": "server/server.js",
   "scripts": {
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
