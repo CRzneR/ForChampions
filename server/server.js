@@ -39,12 +39,12 @@ app.get("/health", (req, res) => {
   });
 });
 
-// --- Statische Dateien (Frontend) ---
 app.use(express.static(path.join(__dirname, "../client")));
 
-// --- SPA Fallback ---
 app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
+  if (req.path.startsWith("/api")) {
+    return next(); // API-Routen nicht überschreiben
+  }
   res.sendFile(path.join(__dirname, "../client/index.html"));
 });
 

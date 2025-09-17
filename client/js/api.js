@@ -4,7 +4,8 @@ let currentTournament = null;
 let currentUser = null;
 
 // ✅ gleiche Domain wie Frontend & Backend
-const API_BASE_URL = window.location.origin;
+// client/js/api.js
+const API_BASE_URL = window.location.origin; // gleiche Domain wie Frontend
 
 // --- Turnier erstellen ---
 export async function createTournament(tournamentData) {
