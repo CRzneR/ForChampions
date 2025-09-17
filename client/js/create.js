@@ -1,3 +1,61 @@
+import { generateGroups } from "./groups.js";
+import { generateSchedule } from "./schedule.js";
+import { updateDashboard } from "./dashboard.js";
+import { showAlert } from "./ui-alert.js";
+import { createTournament } from "./api.js"; // ✅ API-Call einbinden
+
+// 🔹 Globales Objekt initialisieren (falls noch nicht vorhanden)
+if (!window.tournamentData) {
+  window.tournamentData = {};
+}
+
+// --- Schritt 1: Turnierdaten eingeben ---
+export function initCreateModule() {
+  const root = document.getElementById("create-content");
+  if (!root) return;
+
+  root.innerHTML = `
+    <div class="bg-primary rounded-lg shadow-lg border border-gray-800 max-w-2xl mx-auto">
+      <div class="px-6 py-4 border-b border-gray-800">
+        <h2 class="text-2xl font-bold text-white">Neues Turnier erstellen</h2>
+      </div>
+      <div class="p-6">
+        <form id="tournament-form" class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-1">Turniername</label>
+            <input type="text" id="tournament-name" class="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white" placeholder="Mein Turnier" required>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Teams</label>
+              <input type="number" id="team-count" min="2" class="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white" placeholder="8" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Gruppen</label>
+              <input type="number" id="group-count" min="1" class="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white" placeholder="2" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-300 mb-1">Playoff-Plätze</label>
+              <input type="number" id="playoff-spots" min="1" class="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white" placeholder="2" required>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full bg-accent text-white py-2.5 px-4 rounded-md">Weiter zu Teamnamen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("tournament-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    prepareTeamNameInput();
+  });
+}
+
+// --- Schritt 2: Teamnamen + Shuffle ---
 function prepareTeamNameInput() {
   const name = document.getElementById("tournament-name").value.trim();
   const teamCount = parseInt(document.getElementById("team-count").value, 10);
