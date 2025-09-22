@@ -164,7 +164,7 @@
         </div>
 
         <!-- Hauptinhalt -->
-        <div class="flex-1 p-8 ml-64">
+        <div class="flex-1 p-8 ml-72">
           <!-- Dashboard Tab -->
           <div id="dashboard-content" class="tab-content">
             <div class="grid grid-cols-1 gap-6">
@@ -235,6 +235,7 @@
         // Initialisiert alle <i data-lucide="..."> Elemente
         lucide.createIcons();
       });
+
       document.addEventListener("DOMContentLoaded", () => {
         const user = JSON.parse(localStorage.getItem("user") || "null");
         if (!user) {
