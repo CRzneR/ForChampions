@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
@@ -43,7 +43,10 @@
       }
 
       .sidebar-clean button {
-        transition: background 0.2s ease, color 0.2s ease, border 0.2s ease;
+        transition:
+          background 0.2s ease,
+          color 0.2s ease,
+          border 0.2s ease;
       }
 
       .sidebar-clean button:hover {
@@ -146,6 +149,14 @@
           </button>
 
           <button
+            data-tab="bestlist"
+            class="w-full flex items-center px-4 py-2.5 rounded-lg hover:bg-white/10 text-gray-300"
+          >
+            <i data-lucide="trophy" class="w-5 h-5 mr-3"></i>
+            Bestenliste
+          </button>
+
+          <button
             data-tab="playoffs"
             class="w-full flex items-center px-4 py-2.5 rounded-lg hover:bg-white/10 text-gray-300"
           >
@@ -210,6 +221,7 @@
           <section id="groups-content" class="tab-content hidden"></section>
           <section id="schedule-content" class="tab-content hidden"></section>
           <section id="playoffs-content" class="tab-content hidden"></section>
+          <section id="bestlist-content" class="tab-content hidden"></section>
         </main>
       </div>
     </div>

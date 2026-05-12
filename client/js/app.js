@@ -2,23 +2,20 @@
 import { setupTabNavigation } from "./ui-tabs.js";
 import { showAlert } from "./ui-alert.js";
 import { generateGroups } from "./groups.js";
-
+import { initBestlist } from "./bestlist.js";
 // --- API ---
 import { initializeApp, getCurrentTournament, getCurrentUser } from "./api.js";
-
 // --- Dashboard ---
 import { updateDashboard } from "./dashboard.js";
-
 // --- Turnier-Erstellung ---
 import { initCreateModule } from "./create.js";
-
 // --- Weitere Module ---
 import { generateSchedule } from "./schedule.js";
 import { generatePlayoffs } from "./playoffs.js";
 
 // --- Globale Initialisierung ---
 if (!window.tournamentData) {
-  window.tournamentData = {}; // wird von API gefüllt
+  window.tournamentData = {};
 }
 
 // --- Globale Hooks (für onclick etc.) ---
@@ -37,7 +34,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupTabNavigation();
 
   try {
-    // 🔹 Lädt immer frische Daten aus MongoDB (nicht nur LocalStorage!)
     await initializeApp();
   } catch (err) {
     console.error("Fehler beim Initialisieren:", err);
@@ -54,9 +50,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const tabPlayoffs = document.querySelector('[data-tab="playoffs"]');
   if (tabPlayoffs) tabPlayoffs.addEventListener("click", generatePlayoffs);
 
+  const tabBestlist = document.querySelector('[data-tab="bestlist"]');
+  if (tabBestlist)
+    tabBestlist.addEventListener("click", () => {
+      const tournament = getCurrentTournament();
+      if (tournament) initBestlist(tournament);
+    });
+
   const tabCreate = document.querySelector('[data-tab="create"]');
   if (tabCreate) {
     tabCreate.addEventListener("click", initCreateModule);
-    tabCreate.click(); // Standardmäßig öffnen
+    tabCreate.click();
   }
 });
