@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: tournament-manager
+    env: node
+    rootDir: server
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        value: supersecretjwtkey123
+      - key: MONGO_URI
+        sync: false # in Render Dashboard setzen
